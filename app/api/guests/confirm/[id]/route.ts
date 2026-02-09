@@ -1,0 +1,61 @@
+import { NextRequest, NextResponse } from 'next/server';
+import db from '@/lib/db';
+
+// GET /api/guests/confirm/[id] - Get guest by ID for confirmation (public)
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
+    
+    if (!id || isNaN(id)) {
+      return NextResponse.json({ error: 'ID ospite non valido' }, { status: 400 });
+    }
+
+    // Get the guest
+    const guest = db.prepare('SELECT * FROM guests WHERE id = ?').get(id) as any;
+    
+    if (!guest) {
+      return NextResponse.json({ error: 'Ospite non trovato' }, { status: 404 });
+    }
+
+    // Find all family members (the main guest + all linked guests)
+    let familyMembers: any[] = [];
+    
+    if (guest.family_id) {
+      // This guest is linked to another guest - get all members of that family
+      const mainGuestId = guest.family_id;
+      const mainGuest = db.prepare('SELECT * FROM guests WHERE id = ?').get(mainGuestId);
+      if (mainGuest) {
+        familyMembers.push(mainGuest);
+      }
+      // Get all guests linked to the main guest
+      const linkedGuests = db.prepare('SELECT * FROM guests WHERE family_id = ?').all(mainGuestId);
+      familyMembers.push(...linkedGuests);
+      // Remove duplicates
+      familyMembers = familyMembers.filter((g, index, self) => 
+        index === self.findIndex((m) => m.id === g.id)
+      );
+    } else {
+      // This guest might be the main guest - check if others are linked to them
+      const linkedGuests = db.prepare('SELECT * FROM guests WHERE family_id = ?').all(guest.id);
+      if (linkedGuests.length > 0) {
+        familyMembers.push(guest);
+        familyMembers.push(...linkedGuests);
+      } else {
+        // Single guest
+        familyMembers = [guest];
+      }
+    }
+    
+    return NextResponse.json({ 
+      guest: guest,
+      familyMembers: familyMembers.sort((a, b) => a.id - b.id)
+    });
+  } catch (error) {
+    console.error('Error fetching guest:', error);
+    return NextResponse.json({ error: 'Errore interno del server' }, { status: 500 });
+  }
+}

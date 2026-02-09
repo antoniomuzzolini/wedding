@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;600&display=swap');
+
+.font-script {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 600;
+}
+
+.font-serif {
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+}
+
+@media print {
+  nav,
+  header {
+    display: none !important;
+  }
+  
+  @page {
+    margin: 0;
+    size: A4 landscape;
+  }
+  
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: transparent !important;
+  }
+  
+  /* Ensure colors are preserved in print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  /* Ensure background image is visible in print */
+  [style*="background-image"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
