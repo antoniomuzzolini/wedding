@@ -1,7 +1,6 @@
-import { neon, neonConfig } from '@neondatabase/serverless';
+import { neon } from '@neondatabase/serverless';
 
-// Configure Neon for edge runtime compatibility
-neonConfig.fetchConnectionCache = true;
+// Note: fetchConnectionCache is deprecated and always true in newer versions
 
 // Get database URL from environment variable
 const databaseUrl = process.env.DATABASE_URL;
@@ -12,15 +11,49 @@ if (!databaseUrl) {
 
 const sql = neon(databaseUrl);
 
-// Helper to convert SQLite-style queries (? placeholders) to PostgreSQL ($1, $2, etc.)
-function convertQuery(sqliteQuery: string, params: any[]): { query: string; params: any[] } {
+// Helper to execute query using tagged template literal
+// Neon's sql function expects a tagged template literal, so we need to construct it dynamically
+async function executeQuery(query: string, params: any[]): Promise<any[]> {
+  // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
+  let pgQuery = query;
+  const pgParams: any[] = [];
   let paramIndex = 1;
-  const convertedParams: any[] = [];
-  const convertedQuery = sqliteQuery.replace(/\?/g, () => {
-    convertedParams.push(params[paramIndex - 1]);
+  
+  pgQuery = pgQuery.replace(/\?/g, () => {
+    if (paramIndex - 1 < params.length) {
+      pgParams.push(params[paramIndex - 1]);
+    }
     return `$${paramIndex++}`;
   });
-  return { query: convertedQuery, params: convertedParams };
+  
+  // Split query by $1, $2, etc. to create template parts
+  const parts: string[] = [];
+  const values: any[] = [];
+  const regex = /\$(\d+)/g;
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = regex.exec(pgQuery)) !== null) {
+    // Add text before placeholder
+    parts.push(pgQuery.substring(lastIndex, match.index));
+    // Get parameter index (1-based)
+    const paramIdx = parseInt(match[1]) - 1;
+    if (paramIdx < pgParams.length) {
+      values.push(pgParams[paramIdx]);
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  // Add remaining text
+  parts.push(pgQuery.substring(lastIndex));
+  
+  // Create template strings array object that mimics TemplateStringsArray
+  const templateStrings = Object.assign(parts, {
+    raw: [...parts]
+  }) as unknown as TemplateStringsArray;
+  
+  // Call sql as tagged template literal
+  // TypeScript doesn't allow dynamic tagged template literals, so we use type assertion
+  return await (sql as any)(templateStrings, ...values);
 }
 
 // Wrapper class to mimic better-sqlite3 API
@@ -30,40 +63,37 @@ class DatabaseWrapper {
     return {
       // Execute query and return all rows
       all: async (...params: any[]) => {
-        const { query: pgQuery, params: pgParams } = convertQuery(query, params);
-        const result = await sql(pgQuery, pgParams);
+        const result = await executeQuery(query, params);
         return result as any[];
       },
       // Execute query and return first row
       get: async (...params: any[]) => {
-        const { query: pgQuery, params: pgParams } = convertQuery(query, params);
-        const result = await sql(pgQuery, pgParams);
+        const result = await executeQuery(query, params);
         return (result as any[])[0] || null;
       },
       // Execute query and return result with lastInsertRowid
       run: async (...params: any[]) => {
-        const { query: pgQuery, params: pgParams } = convertQuery(query, params);
-        
         // Check if this is an INSERT query
         const isInsert = /^\s*INSERT\s+/i.test(query.trim());
         
         if (isInsert) {
           // For INSERT, append RETURNING id to get the inserted ID
-          let insertQuery = pgQuery.trim();
-          if (!insertQuery.endsWith(';')) {
-            insertQuery += ';';
-          }
-          // Remove trailing semicolon and add RETURNING
-          insertQuery = insertQuery.replace(/;\s*$/, '') + ' RETURNING id';
-          const result = await sql(insertQuery, pgParams);
-          const insertedId = (result as any[])[0]?.id;
+          let insertQuery = query.trim();
+          // Remove trailing semicolon if present
+          insertQuery = insertQuery.replace(/;\s*$/, '');
+          // Add RETURNING id
+          insertQuery = insertQuery + ' RETURNING id';
+          
+          const result = await executeQuery(insertQuery, params);
+          const insertedId = Array.isArray(result) && result.length > 0 ? (result[0] as any)?.id : null;
+          
           return {
             lastInsertRowid: insertedId || null,
-            changes: 1,
+            changes: insertedId ? 1 : 0,
           };
         } else {
           // For UPDATE/DELETE, execute normally
-          const result = await sql(pgQuery, pgParams);
+          const result = await executeQuery(query, params);
           return {
             lastInsertRowid: null,
             changes: Array.isArray(result) ? result.length : 0,
@@ -81,7 +111,11 @@ class DatabaseWrapper {
       .filter(s => s.length > 0);
 
     for (const statement of statementList) {
-      await sql(statement);
+      // For exec, we can use sql directly as tagged template since statements don't have params
+      const templateStrings = Object.assign([statement], {
+        raw: [statement]
+      }) as unknown as TemplateStringsArray;
+      await (sql as any)(templateStrings);
     }
   }
 }
@@ -172,9 +206,17 @@ async function initializeSchema() {
     }
 
     // Create default admin user if it doesn't exist
-    const defaultAdmin = await db.prepare('SELECT * FROM admin_users WHERE username = ?').get('admin');
+    // Use sql directly to avoid recursion
+    const defaultAdminCheck = await sql`
+      SELECT * FROM admin_users WHERE username = 'admin'
+    `;
+    const defaultAdmin = Array.isArray(defaultAdminCheck) && defaultAdminCheck.length > 0 ? defaultAdminCheck[0] : null;
+    
     if (!defaultAdmin && process.env.ADMIN_PASSWORD) {
-      await db.prepare('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)').run('admin', process.env.ADMIN_PASSWORD);
+      await sql`
+        INSERT INTO admin_users (username, password_hash) 
+        VALUES ('admin', ${process.env.ADMIN_PASSWORD})
+      `;
     }
   } catch (error) {
     console.error('Error initializing database schema:', error);
@@ -183,7 +225,74 @@ async function initializeSchema() {
   }
 }
 
-// Initialize schema on module load (but don't block)
-initializeSchema().catch(console.error);
+// Initialize schema synchronously - we'll use a promise to ensure it's done
+let schemaInitialized = false;
+let schemaInitPromise: Promise<void> | null = null;
+
+function ensureSchemaInitialized(): Promise<void> {
+  if (schemaInitialized) {
+    return Promise.resolve();
+  }
+  
+  if (!schemaInitPromise) {
+    schemaInitPromise = Promise.race([
+      initializeSchema(),
+      new Promise<void>((_, reject) => 
+        setTimeout(() => reject(new Error('Schema initialization timeout after 15 seconds')), 15000)
+      )
+    ]).then(() => {
+      schemaInitialized = true;
+    }).catch((error) => {
+      console.error('Error initializing database schema:', error);
+      schemaInitialized = false;
+      schemaInitPromise = null;
+      throw error;
+    });
+  }
+  
+  return schemaInitPromise;
+}
+
+// Initialize schema on module load
+ensureSchemaInitialized().catch(console.error);
+
+// Wrap db methods to ensure schema is initialized before executing queries
+const originalPrepare = db.prepare.bind(db);
+(db as any).prepare = function(query: string) {
+  const statement = originalPrepare(query);
+  const originalAll = statement.all.bind(statement);
+  const originalGet = statement.get.bind(statement);
+  const originalRun = statement.run.bind(statement);
+  
+  return {
+    all: async (...params: any[]) => {
+      try {
+        await ensureSchemaInitialized();
+        return await originalAll(...params);
+      } catch (error) {
+        console.error('Error in db.prepare().all():', error);
+        throw error;
+      }
+    },
+    get: async (...params: any[]) => {
+      try {
+        await ensureSchemaInitialized();
+        return await originalGet(...params);
+      } catch (error) {
+        console.error('Error in db.prepare().get():', error);
+        throw error;
+      }
+    },
+    run: async (...params: any[]) => {
+      try {
+        await ensureSchemaInitialized();
+        return await originalRun(...params);
+      } catch (error) {
+        console.error('Error in db.prepare().run():', error);
+        throw error;
+      }
+    },
+  };
+};
 
 export default db;

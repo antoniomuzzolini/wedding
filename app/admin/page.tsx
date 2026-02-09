@@ -43,6 +43,7 @@ export default function AdminPanel() {
     if (authenticated && adminKey) {
       loadGuests()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, adminKey])
 
   const authenticate = async () => {
@@ -76,20 +77,41 @@ export default function AdminPanel() {
   }
 
   const loadGuests = async () => {
-    if (!adminKey) return
+    if (!adminKey) {
+      setLoading(false)
+      return
+    }
     
     setLoading(true)
     setError('')
+    
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setError('Timeout: la richiesta ha impiegato troppo tempo')
+      setLoading(false)
+    }, 10000) // 10 second timeout
+    
     try {
       const response = await fetch(`/api/guests?adminKey=${adminKey}`)
-      const data = await response.json()
-      if (response.ok) {
-        setGuests(data.guests)
-      } else {
-        setError(data.error || 'Caricamento ospiti fallito')
+      clearTimeout(timeoutId)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        try {
+          const errorData = JSON.parse(errorText)
+          setError(errorData.error || 'Caricamento ospiti fallito')
+        } catch {
+          setError(`Errore ${response.status}: ${errorText}`)
+        }
+        setLoading(false)
+        return
       }
+      
+      const data = await response.json()
+      setGuests(data.guests || [])
     } catch (err) {
-      setError('Si è verificato un errore')
+      clearTimeout(timeoutId)
+      setError('Si è verificato un errore: ' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setLoading(false)
     }
@@ -338,6 +360,9 @@ export default function AdminPanel() {
   const declinedCount = guests.filter((g) => g.response_status === 'declined').length
   const pendingCount = guests.filter((g) => g.response_status === 'pending').length
 
+  // Check if form is valid for adding guest
+  const canAddGuest = newGuest.name.trim() !== '' && newGuest.surname.trim() !== '' && newGuest.invitation_type && !loading && authenticated
+
   return (
     <div className="py-16 px-4">
       <div className="max-w-7xl mx-auto">
@@ -407,8 +432,8 @@ export default function AdminPanel() {
               </select>
               <button
                 onClick={addGuest}
-                disabled={loading}
-                className="bg-wedding-gold text-white px-6 py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                disabled={!canAddGuest}
+                className="bg-wedding-gold text-white px-6 py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Aggiungi Ospite
               </button>

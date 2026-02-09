@@ -5,7 +5,6 @@ import { GuestInput } from '@/lib/types';
 // GET /api/guests - Get all guests (admin only)
 export async function GET(request: NextRequest) {
   try {
-    // In production, add proper authentication here
     const searchParams = request.nextUrl.searchParams;
     const adminKey = searchParams.get('adminKey');
     
@@ -55,7 +54,18 @@ export async function POST(request: NextRequest) {
       .prepare('INSERT INTO guests (name, surname, invitation_type, family_id, menu_type) VALUES (?, ?, ?, ?, ?)')
       .run(name, surname, invitation_type, finalFamilyId, menu_type || 'adulto');
 
+    if (!result || !result.lastInsertRowid) {
+      console.error('Insert failed - no lastInsertRowid returned:', result);
+      return NextResponse.json({ error: 'Errore durante l\'inserimento dell\'ospite' }, { status: 500 });
+    }
+
     const guest = await db.prepare('SELECT * FROM guests WHERE id = ?').get(result.lastInsertRowid);
+    
+    if (!guest) {
+      console.error('Guest not found after insert, id:', result.lastInsertRowid);
+      return NextResponse.json({ error: 'Ospite creato ma non trovato' }, { status: 500 });
+    }
+    
     return NextResponse.json({ guest }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating guest:', error);
