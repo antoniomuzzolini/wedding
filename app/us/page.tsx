@@ -197,14 +197,17 @@ export default function Us() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
           onClick={closeImage}
         >
-          {/* Close button */}
+          {/* Close button - larger on mobile */}
           <button
-            onClick={closeImage}
-            className="absolute top-4 right-4 text-white hover:text-wedding-gold transition-colors z-10"
+            onClick={(e) => {
+              e.stopPropagation()
+              closeImage()
+            }}
+            className="absolute top-4 right-4 text-white hover:text-wedding-gold transition-colors z-20 bg-black/60 rounded-full p-3 md:p-2 touch-manipulation"
             aria-label="Chiudi"
           >
             <svg
-              className="w-8 h-8"
+              className="w-10 h-10 md:w-8 md:h-8"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -212,23 +215,35 @@ export default function Us() {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
           </button>
 
-          {/* Navigation buttons */}
+          {/* Mobile-friendly close button at bottom */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              closeImage()
+            }}
+            className="md:hidden absolute bottom-20 left-1/2 -translate-x-1/2 text-white bg-wedding-gold/80 hover:bg-wedding-gold px-6 py-3 rounded-full font-semibold text-lg touch-manipulation z-20"
+            aria-label="Chiudi"
+          >
+            Chiudi
+          </button>
+
+          {/* Navigation buttons - larger touch targets on mobile */}
           <button
             onClick={(e) => {
               e.stopPropagation()
               navigateImage('prev')
             }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-wedding-gold transition-colors z-10 bg-black/50 rounded-full p-2"
+            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-white hover:text-wedding-gold transition-colors z-20 bg-black/60 rounded-full p-3 md:p-2 touch-manipulation"
             aria-label="Foto precedente"
           >
             <svg
-              className="w-8 h-8"
+              className="w-10 h-10 md:w-8 md:h-8"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -236,7 +251,7 @@ export default function Us() {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 d="M15 19l-7-7 7-7"
               />
             </svg>
@@ -247,11 +262,11 @@ export default function Us() {
               e.stopPropagation()
               navigateImage('next')
             }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-wedding-gold transition-colors z-10 bg-black/50 rounded-full p-2"
+            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-white hover:text-wedding-gold transition-colors z-20 bg-black/60 rounded-full p-3 md:p-2 touch-manipulation"
             aria-label="Foto successiva"
           >
             <svg
-              className="w-8 h-8"
+              className="w-10 h-10 md:w-8 md:h-8"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -259,7 +274,7 @@ export default function Us() {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 d="M9 5l7 7-7 7"
               />
             </svg>
@@ -282,7 +297,7 @@ export default function Us() {
           </div>
 
           {/* Image counter */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black/50 px-4 py-2 rounded-lg text-sm">
+          <div className="absolute bottom-24 md:bottom-4 left-1/2 -translate-x-1/2 text-white bg-black/60 px-4 py-2 rounded-lg text-base md:text-sm">
             {selectedImage.index + 1} / {gallerySections[selectedImage.sectionName]?.length || 0}
           </div>
         </div>
