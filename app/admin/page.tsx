@@ -360,6 +360,18 @@ export default function AdminPanel() {
   const declinedCount = guests.filter((g) => g.response_status === 'declined').length
   const pendingCount = guests.filter((g) => g.response_status === 'pending').length
 
+  // Counts for full ceremony (intera cerimonia)
+  const fullCeremonyGuests = guests.filter((g) => g.invitation_type === 'full')
+  const fullCeremonyAdults = fullCeremonyGuests.filter((g) => g.menu_type === 'adulto').length
+  const fullCeremonyBambini = fullCeremonyGuests.filter((g) => g.menu_type === 'bambino').length
+  const fullCeremonyNeonati = fullCeremonyGuests.filter((g) => g.menu_type === 'neonato').length
+
+  // Counts for evening only (sera)
+  const eveningGuests = guests.filter((g) => g.invitation_type === 'evening')
+  const eveningAdults = eveningGuests.filter((g) => g.menu_type === 'adulto').length
+  const eveningBambini = eveningGuests.filter((g) => g.menu_type === 'bambino').length
+  const eveningNeonati = eveningGuests.filter((g) => g.menu_type === 'neonato').length
+
   // Check if form is valid for adding guest
   const canAddGuest = newGuest.name.trim() !== '' && newGuest.surname.trim() !== '' && newGuest.invitation_type && !loading && authenticated
 
@@ -387,6 +399,61 @@ export default function AdminPanel() {
           <div className="bg-gray-50 p-6 rounded-lg shadow-lg text-center">
             <div className="text-3xl font-bold text-gray-800">{pendingCount}</div>
             <div className="text-gray-600">In Attesa</div>
+          </div>
+        </div>
+
+        {/* Counts by invitation type and menu type */}
+        <div className="grid md:grid-cols-2 gap-4 mb-8">
+          {/* Full Ceremony Counts */}
+          <div className="bg-white/80 p-6 rounded-lg shadow-lg">
+            <h3 className="text-xl font-serif text-wedding-gold mb-4 text-center">
+              Intera Cerimonia
+            </h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-800">{fullCeremonyAdults}</div>
+                <div className="text-sm text-gray-600">Adulti</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-800">{fullCeremonyBambini}</div>
+                <div className="text-sm text-gray-600">Bambini</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-800">{fullCeremonyNeonati}</div>
+                <div className="text-sm text-gray-600">Neonati</div>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+              <div className="text-lg font-semibold text-gray-700">
+                Totale: {fullCeremonyGuests.length}
+              </div>
+            </div>
+          </div>
+
+          {/* Evening Only Counts */}
+          <div className="bg-white/80 p-6 rounded-lg shadow-lg">
+            <h3 className="text-xl font-serif text-wedding-gold mb-4 text-center">
+              Solo Serata
+            </h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-800">{eveningAdults}</div>
+                <div className="text-sm text-gray-600">Adulti</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-800">{eveningBambini}</div>
+                <div className="text-sm text-gray-600">Bambini</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-800">{eveningNeonati}</div>
+                <div className="text-sm text-gray-600">Neonati</div>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+              <div className="text-lg font-semibold text-gray-700">
+                Totale: {eveningGuests.length}
+              </div>
+            </div>
           </div>
         </div>
 
