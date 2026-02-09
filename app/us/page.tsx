@@ -1,15 +1,22 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface GallerySections {
   [sectionName: string]: string[]
 }
 
+interface SelectedImage {
+  src: string
+  sectionName: string
+  index: number
+}
+
 export default function Us() {
   const [gallerySections, setGallerySections] = useState<GallerySections>({})
   const [loading, setLoading] = useState(true)
+  const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(null)
 
   useEffect(() => {
     const loadGallery = async () => {
@@ -35,6 +42,55 @@ export default function Us() {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ')
   }
+
+  const openImage = (src: string, sectionName: string, index: number) => {
+    setSelectedImage({ src, sectionName, index })
+  }
+
+  const closeImage = () => {
+    setSelectedImage(null)
+  }
+
+  const navigateImage = useCallback((direction: 'prev' | 'next') => {
+    if (!selectedImage) return
+
+    const currentSection = gallerySections[selectedImage.sectionName]
+    if (!currentSection) return
+
+    let newIndex = direction === 'next' 
+      ? selectedImage.index + 1 
+      : selectedImage.index - 1
+
+    // Wrap around
+    if (newIndex < 0) {
+      newIndex = currentSection.length - 1
+    } else if (newIndex >= currentSection.length) {
+      newIndex = 0
+    }
+
+    setSelectedImage({
+      src: currentSection[newIndex],
+      sectionName: selectedImage.sectionName,
+      index: newIndex
+    })
+  }, [selectedImage, gallerySections])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedImage) {
+        if (e.key === 'Escape') {
+          setSelectedImage(null)
+        } else if (e.key === 'ArrowLeft') {
+          navigateImage('prev')
+        } else if (e.key === 'ArrowRight') {
+          navigateImage('next')
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedImage, navigateImage])
 
   return (
     <div className="py-16 px-4">
@@ -109,6 +165,7 @@ export default function Us() {
                     {images.map((src, index) => (
                       <div
                         key={index}
+                        onClick={() => openImage(src, sectionName, index)}
                         className="relative aspect-square rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform cursor-pointer group"
                       >
                         <Image
@@ -133,6 +190,103 @@ export default function Us() {
           </p>
         </div>
       </div>
+
+      {/* Image Modal/Lightbox */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={closeImage}
+        >
+          {/* Close button */}
+          <button
+            onClick={closeImage}
+            className="absolute top-4 right-4 text-white hover:text-wedding-gold transition-colors z-10"
+            aria-label="Chiudi"
+          >
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+
+          {/* Navigation buttons */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              navigateImage('prev')
+            }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-wedding-gold transition-colors z-10 bg-black/50 rounded-full p-2"
+            aria-label="Foto precedente"
+          >
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              navigateImage('next')
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-wedding-gold transition-colors z-10 bg-black/50 rounded-full p-2"
+            aria-label="Foto successiva"
+          >
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+
+          {/* Image */}
+          <div
+            className="relative max-w-7xl max-h-full w-full h-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={selectedImage.src}
+              alt={`${formatSectionName(selectedImage.sectionName)} - Foto ${selectedImage.index + 1}`}
+              width={1200}
+              height={800}
+              className="max-w-full max-h-full object-contain rounded-lg"
+              unoptimized
+              priority
+            />
+          </div>
+
+          {/* Image counter */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black/50 px-4 py-2 rounded-lg text-sm">
+            {selectedImage.index + 1} / {gallerySections[selectedImage.sectionName]?.length || 0}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
