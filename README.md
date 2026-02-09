@@ -34,9 +34,6 @@ npm run dev
 
 Access the admin panel at `/admin` to manage guests.
 
-**Default admin credentials:**
-- Admin Key: `admin123`
-
 ⚠️ **IMPORTANT:** Change the admin authentication in production! The current implementation uses a simple key check and should be replaced with proper authentication (JWT tokens, session management, etc.).
 
 ## Database

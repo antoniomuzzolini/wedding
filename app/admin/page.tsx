@@ -31,28 +31,57 @@ export default function AdminPanel() {
   useEffect(() => {
     // Check if already authenticated (in production, use proper session management)
     const stored = localStorage.getItem('adminAuthenticated')
-    if (stored === 'true') {
+    const storedKey = localStorage.getItem('adminKey')
+    if (stored === 'true' && storedKey) {
       setAuthenticated(true)
-      loadGuests()
+      setAdminKey(storedKey) // Restore adminKey from localStorage
     }
   }, [])
 
-  const authenticate = () => {
-    // Simple auth check - REPLACE WITH PROPER AUTH IN PRODUCTION
-    if (adminKey === 'admin123') {
-      setAuthenticated(true)
-      localStorage.setItem('adminAuthenticated', 'true')
+  useEffect(() => {
+    // Load guests when authenticated and adminKey is available
+    if (authenticated && adminKey) {
       loadGuests()
-    } else {
-      setError('Chiave admin non valida')
+    }
+  }, [authenticated, adminKey])
+
+  const authenticate = async () => {
+    setLoading(true)
+    setError('')
+    
+    try {
+      const response = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: adminKey }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setAuthenticated(true)
+        localStorage.setItem('adminAuthenticated', 'true')
+        localStorage.setItem('adminKey', adminKey) // Store adminKey for API calls
+        loadGuests()
+      } else {
+        setError(data.error || 'Chiave admin non valida')
+      }
+    } catch (err) {
+      setError('Errore di connessione. Riprova.')
+    } finally {
+      setLoading(false)
     }
   }
 
   const loadGuests = async () => {
+    if (!adminKey) return
+    
     setLoading(true)
     setError('')
     try {
-      const response = await fetch(`/api/guests?adminKey=${adminKey || 'admin123'}`)
+      const response = await fetch(`/api/guests?adminKey=${adminKey}`)
       const data = await response.json()
       if (response.ok) {
         setGuests(data.guests)
@@ -84,7 +113,7 @@ export default function AdminPanel() {
           invitation_type: newGuest.invitation_type,
           family_id: newGuest.linkToGuest,
           menu_type: newGuest.menu_type,
-          adminKey: adminKey || 'admin123',
+          adminKey: adminKey,
         }),
       })
 
@@ -138,7 +167,7 @@ export default function AdminPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...editForm,
-          adminKey: adminKey || 'admin123',
+          adminKey: adminKey,
         }),
       })
 
@@ -161,7 +190,7 @@ export default function AdminPanel() {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/guests/delete/${id}?adminKey=${adminKey || 'admin123'}`, {
+      const response = await fetch(`/api/guests/delete/${id}?adminKey=${adminKey}`, {
         method: 'DELETE',
       })
 

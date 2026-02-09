@@ -93,12 +93,12 @@ try {
   console.log('Index creation:', error);
 }
 
-// Create default admin user (password: admin123 - should be changed!)
+// Create default admin user (password: process.env.ADMIN_PASSWORD - should be changed!)
 // In production, use proper password hashing (bcrypt)
 const defaultAdmin = db.prepare('SELECT * FROM admin_users WHERE username = ?').get('admin');
 if (!defaultAdmin) {
   // Simple hash for demo - REPLACE WITH PROPER HASHING IN PRODUCTION
-  const passwordHash = 'admin123'; // This should be bcrypt hash in production
+  const passwordHash = process.env.ADMIN_PASSWORD; // This should be bcrypt hash in production
   db.prepare('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)').run('admin', passwordHash);
 }
 

@@ -11,7 +11,7 @@ export async function DELETE(
     const adminKey = searchParams.get('adminKey');
     
     // Simple admin check - REPLACE WITH PROPER AUTH IN PRODUCTION
-    if (adminKey !== 'admin123') {
+    if (adminKey !== process.env.ADMIN_KEY) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
     }
 

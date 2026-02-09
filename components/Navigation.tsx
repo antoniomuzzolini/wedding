@@ -8,15 +8,27 @@ export default function Navigation() {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [lastScrollY, setLastScrollY] = useState(0)
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50)
+      const currentScrollY = window.scrollY
+      
+      // Use hysteresis: hide when scrolling down past 50, show when scrolling up past 30
+      if (currentScrollY > lastScrollY && currentScrollY > 80) {
+        // Scrolling down and past threshold - hide
+        setScrolled(true)
+      } else if (currentScrollY < lastScrollY && currentScrollY < 20) {
+        // Scrolling up and below threshold - show
+        setScrolled(false)
+      }
+      
+      setLastScrollY(currentScrollY)
     }
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [lastScrollY])
 
   // Close mobile menu when route changes
   useEffect(() => {

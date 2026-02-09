@@ -46,9 +46,9 @@ db.exec(`
 const defaultAdmin = db.prepare('SELECT * FROM admin_users WHERE username = ?').get('admin');
 if (!defaultAdmin) {
   // Simple hash for demo - REPLACE WITH PROPER HASHING IN PRODUCTION
-  const passwordHash = 'admin123'; // This should be bcrypt hash in production
+  const passwordHash = process.env.ADMIN_PASSWORD; // This should be bcrypt hash in production
   db.prepare('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)').run('admin', passwordHash);
-  console.log('Default admin user created (username: admin, password: admin123)');
+  console.log('Default admin user created (username: admin, password: process.env.ADMIN_PASSWORD)');
 }
 
 console.log('Database initialized successfully!');
