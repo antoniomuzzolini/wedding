@@ -25,7 +25,7 @@ export async function PUT(
     }
 
     // Check if guest exists
-    const existingGuest = db.prepare('SELECT * FROM guests WHERE id = ?').get(id);
+    const existingGuest = await db.prepare('SELECT * FROM guests WHERE id = ?').get(id);
     if (!existingGuest) {
       return NextResponse.json({ error: 'Ospite non trovato' }, { status: 404 });
     }
@@ -33,7 +33,7 @@ export async function PUT(
     // Handle family_id update
     let finalFamilyId = null;
     if (family_id !== null && family_id !== undefined && family_id !== '') {
-      const linkedGuest = db.prepare('SELECT id, family_id FROM guests WHERE id = ?').get(family_id);
+      const linkedGuest = await db.prepare('SELECT id, family_id FROM guests WHERE id = ?').get(family_id);
       if (!linkedGuest) {
         return NextResponse.json({ error: 'Ospite collegato non trovato' }, { status: 400 });
       }
@@ -42,7 +42,7 @@ export async function PUT(
     }
 
     // Update guest
-    db.prepare(
+    await db.prepare(
       `UPDATE guests 
        SET name = ?, 
            surname = ?, 
@@ -60,7 +60,7 @@ export async function PUT(
       id
     );
 
-    const updatedGuest = db.prepare('SELECT * FROM guests WHERE id = ?').get(id);
+    const updatedGuest = await db.prepare('SELECT * FROM guests WHERE id = ?').get(id);
     return NextResponse.json({ guest: updatedGuest });
   } catch (error: any) {
     console.error('Error updating guest:', error);

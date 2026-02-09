@@ -1,105 +1,189 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+import { neon, neonConfig } from '@neondatabase/serverless';
 
-const dbPath = path.join(process.cwd(), 'wedding.db');
+// Configure Neon for edge runtime compatibility
+neonConfig.fetchConnectionCache = true;
 
-// better-sqlite3 will create the database file automatically if it doesn't exist
-const db = new Database(dbPath);
+// Get database URL from environment variable
+const databaseUrl = process.env.DATABASE_URL;
 
-// Check if table exists and get its structure
-let tableExists = false;
-let hasSurname = false;
-let hasFamilyId = false;
-let hasMenuType = false;
-
-try {
-  const tableInfo = db.prepare("PRAGMA table_info(guests)").all() as Array<{ name: string }>;
-  tableExists = tableInfo.length > 0;
-  if (tableExists) {
-    hasSurname = tableInfo.some((col) => col.name === 'surname');
-    hasFamilyId = tableInfo.some((col) => col.name === 'family_id');
-    hasMenuType = tableInfo.some((col) => col.name === 'menu_type');
-  }
-} catch (error) {
-  // Table doesn't exist yet
-  tableExists = false;
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL environment variable is not set');
 }
 
-// Create table if it doesn't exist
-if (!tableExists) {
-  db.exec(`
-    CREATE TABLE guests (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      surname TEXT NOT NULL,
-      email TEXT,
-      family_id INTEGER,
-      invitation_type TEXT NOT NULL CHECK(invitation_type IN ('full', 'evening')),
-      response_status TEXT DEFAULT 'pending' CHECK(response_status IN ('pending', 'confirmed', 'declined')),
-      response_date TEXT,
-      menu_type TEXT CHECK(menu_type IN ('adulto', 'bambino', 'neonato')),
-      dietary_requirements TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (family_id) REFERENCES guests(id) ON DELETE SET NULL
-    );
-  `);
-} else {
-  // Migrate existing table
-  if (!hasSurname) {
-    db.exec(`ALTER TABLE guests ADD COLUMN surname TEXT;`);
-    // Try to extract surname from name for existing records
-    const guests = db.prepare('SELECT id, name FROM guests WHERE surname IS NULL OR surname = ?').all('');
-    guests.forEach((guest: any) => {
-      const parts = guest.name.trim().split(/\s+/);
-      if (parts.length > 1) {
-        const surname = parts[parts.length - 1];
-        const name = parts.slice(0, -1).join(' ');
-        db.prepare('UPDATE guests SET name = ?, surname = ? WHERE id = ?').run(name, surname, guest.id);
-      } else {
-        db.prepare('UPDATE guests SET surname = ? WHERE id = ?').run('', guest.id);
+const sql = neon(databaseUrl);
+
+// Helper to convert SQLite-style queries (? placeholders) to PostgreSQL ($1, $2, etc.)
+function convertQuery(sqliteQuery: string, params: any[]): { query: string; params: any[] } {
+  let paramIndex = 1;
+  const convertedParams: any[] = [];
+  const convertedQuery = sqliteQuery.replace(/\?/g, () => {
+    convertedParams.push(params[paramIndex - 1]);
+    return `$${paramIndex++}`;
+  });
+  return { query: convertedQuery, params: convertedParams };
+}
+
+// Wrapper class to mimic better-sqlite3 API
+class DatabaseWrapper {
+  // Prepare a statement (returns a Statement-like object)
+  prepare(query: string) {
+    return {
+      // Execute query and return all rows
+      all: async (...params: any[]) => {
+        const { query: pgQuery, params: pgParams } = convertQuery(query, params);
+        const result = await sql(pgQuery, pgParams);
+        return result as any[];
+      },
+      // Execute query and return first row
+      get: async (...params: any[]) => {
+        const { query: pgQuery, params: pgParams } = convertQuery(query, params);
+        const result = await sql(pgQuery, pgParams);
+        return (result as any[])[0] || null;
+      },
+      // Execute query and return result with lastInsertRowid
+      run: async (...params: any[]) => {
+        const { query: pgQuery, params: pgParams } = convertQuery(query, params);
+        
+        // Check if this is an INSERT query
+        const isInsert = /^\s*INSERT\s+/i.test(query.trim());
+        
+        if (isInsert) {
+          // For INSERT, append RETURNING id to get the inserted ID
+          let insertQuery = pgQuery.trim();
+          if (!insertQuery.endsWith(';')) {
+            insertQuery += ';';
+          }
+          // Remove trailing semicolon and add RETURNING
+          insertQuery = insertQuery.replace(/;\s*$/, '') + ' RETURNING id';
+          const result = await sql(insertQuery, pgParams);
+          const insertedId = (result as any[])[0]?.id;
+          return {
+            lastInsertRowid: insertedId || null,
+            changes: 1,
+          };
+        } else {
+          // For UPDATE/DELETE, execute normally
+          const result = await sql(pgQuery, pgParams);
+          return {
+            lastInsertRowid: null,
+            changes: Array.isArray(result) ? result.length : 0,
+          };
+        }
+      },
+    };
+  }
+
+  // Execute multiple statements (for schema creation)
+  async exec(statements: string) {
+    const statementList = statements
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    for (const statement of statementList) {
+      await sql(statement);
+    }
+  }
+}
+
+const db = new DatabaseWrapper();
+
+// Initialize database schema
+async function initializeSchema() {
+  try {
+    // Check if guests table exists
+    const tableCheck = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'guests'
+      );
+    `;
+    
+    const tableExists = (tableCheck[0] as any)?.exists || false;
+
+    if (!tableExists) {
+      // Create guests table
+      await sql`
+        CREATE TABLE guests (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          surname VARCHAR(255) NOT NULL,
+          email VARCHAR(255),
+          family_id INTEGER,
+          invitation_type VARCHAR(20) NOT NULL CHECK(invitation_type IN ('full', 'evening')),
+          response_status VARCHAR(20) DEFAULT 'pending' CHECK(response_status IN ('pending', 'confirmed', 'declined')),
+          response_date TIMESTAMP,
+          menu_type VARCHAR(20) CHECK(menu_type IN ('adulto', 'bambino', 'neonato')),
+          dietary_requirements TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (family_id) REFERENCES guests(id) ON DELETE SET NULL
+        );
+      `;
+
+      // Create indexes
+      await sql`CREATE INDEX idx_guests_surname ON guests(surname);`;
+      await sql`CREATE INDEX idx_guests_response ON guests(response_status);`;
+      await sql`CREATE INDEX idx_guests_family ON guests(family_id);`;
+    } else {
+      // Check and add missing columns
+      const columns = await sql`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'guests' AND table_schema = 'public';
+      `;
+      
+      const columnNames = (columns as any[]).map(c => c.column_name);
+      
+      if (!columnNames.includes('surname')) {
+        await sql`ALTER TABLE guests ADD COLUMN surname VARCHAR(255);`;
       }
-    });
-  }
-  
-  if (!hasFamilyId) {
-    db.exec(`ALTER TABLE guests ADD COLUMN family_id INTEGER;`);
-  }
-  
-  if (!hasMenuType) {
-    db.exec(`ALTER TABLE guests ADD COLUMN menu_type TEXT CHECK(menu_type IN ('adulto', 'bambino', 'neonato'));`);
+      
+      if (!columnNames.includes('family_id')) {
+        await sql`ALTER TABLE guests ADD COLUMN family_id INTEGER;`;
+      }
+      
+      if (!columnNames.includes('menu_type')) {
+        await sql`ALTER TABLE guests ADD COLUMN menu_type VARCHAR(20) CHECK(menu_type IN ('adulto', 'bambino', 'neonato'));`;
+      }
+    }
+
+    // Create admin_users table
+    const adminTableCheck = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'admin_users'
+      );
+    `;
+    
+    const adminTableExists = (adminTableCheck[0] as any)?.exists || false;
+
+    if (!adminTableExists) {
+      await sql`
+        CREATE TABLE admin_users (
+          id SERIAL PRIMARY KEY,
+          username VARCHAR(255) UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `;
+    }
+
+    // Create default admin user if it doesn't exist
+    const defaultAdmin = await db.prepare('SELECT * FROM admin_users WHERE username = ?').get('admin');
+    if (!defaultAdmin && process.env.ADMIN_PASSWORD) {
+      await db.prepare('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)').run('admin', process.env.ADMIN_PASSWORD);
+    }
+  } catch (error) {
+    console.error('Error initializing database schema:', error);
+    // Don't throw - allow the app to start even if schema initialization fails
+    // (it might already be initialized)
   }
 }
 
-// Create admin_users table
-db.exec(`
-  CREATE TABLE IF NOT EXISTS admin_users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
-
-// Create indexes (only if columns exist)
-try {
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_guests_surname ON guests(surname);
-    CREATE INDEX IF NOT EXISTS idx_guests_response ON guests(response_status);
-    CREATE INDEX IF NOT EXISTS idx_guests_family ON guests(family_id);
-  `);
-} catch (error) {
-  // Indexes might already exist or columns might not exist yet
-  console.log('Index creation:', error);
-}
-
-// Create default admin user (password: process.env.ADMIN_PASSWORD - should be changed!)
-// In production, use proper password hashing (bcrypt)
-const defaultAdmin = db.prepare('SELECT * FROM admin_users WHERE username = ?').get('admin');
-if (!defaultAdmin) {
-  // Simple hash for demo - REPLACE WITH PROPER HASHING IN PRODUCTION
-  const passwordHash = process.env.ADMIN_PASSWORD; // This should be bcrypt hash in production
-  db.prepare('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)').run('admin', passwordHash);
-}
+// Initialize schema on module load (but don't block)
+initializeSchema().catch(console.error);
 
 export default db;

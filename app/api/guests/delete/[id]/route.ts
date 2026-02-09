@@ -17,7 +17,7 @@ export async function DELETE(
 
     const { id: idParam } = await params;
     const id = parseInt(idParam);
-    const result = db.prepare('DELETE FROM guests WHERE id = ?').run(id);
+    const result = await db.prepare('DELETE FROM guests WHERE id = ?').run(id);
 
     if (result.changes === 0) {
       return NextResponse.json({ error: 'Ospite non trovato' }, { status: 404 });

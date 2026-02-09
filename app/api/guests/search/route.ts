@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY surname, name LIMIT 10';
 
-    const foundGuests = db.prepare(query).all(...params);
+    const foundGuests = await db.prepare(query).all(...params);
 
     if (foundGuests.length === 0) {
       return NextResponse.json({ error: 'Ospite non trovato. Controlla nome e cognome.' }, { status: 404 });
@@ -42,12 +42,12 @@ export async function GET(request: NextRequest) {
     if (guest.family_id) {
       // This guest is linked to another guest - get all members of that family
       const mainGuestId = guest.family_id;
-      const mainGuest = db.prepare('SELECT * FROM guests WHERE id = ?').get(mainGuestId);
+      const mainGuest = await db.prepare('SELECT * FROM guests WHERE id = ?').get(mainGuestId);
       if (mainGuest) {
         familyMembers.push(mainGuest);
       }
       // Get all guests linked to the main guest
-      const linkedGuests = db.prepare('SELECT * FROM guests WHERE family_id = ?').all(mainGuestId);
+      const linkedGuests = await db.prepare('SELECT * FROM guests WHERE family_id = ?').all(mainGuestId);
       familyMembers.push(...linkedGuests);
       // Remove duplicates
       familyMembers = familyMembers.filter((g, index, self) => 
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       );
     } else {
       // This guest might be the main guest - check if others are linked to them
-      const linkedGuests = db.prepare('SELECT * FROM guests WHERE family_id = ?').all(guest.id);
+      const linkedGuests = await db.prepare('SELECT * FROM guests WHERE family_id = ?').all(guest.id);
       if (linkedGuests.length > 0) {
         familyMembers.push(guest);
         familyMembers.push(...linkedGuests);

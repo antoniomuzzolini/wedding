@@ -25,7 +25,7 @@ export async function PUT(request: NextRequest) {
         continue; // Skip invalid responses
       }
 
-      const guest = db.prepare('SELECT * FROM guests WHERE id = ?').get(guest_id);
+      const guest = await db.prepare('SELECT * FROM guests WHERE id = ?').get(guest_id);
       if (!guest) {
         continue; // Skip if guest not found
       }
@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest) {
         ? (menu_type || 'adulto')
         : null;
 
-      db.prepare(
+      await db.prepare(
         `UPDATE guests 
          SET response_status = ?, 
              response_date = ?,
@@ -51,7 +51,7 @@ export async function PUT(request: NextRequest) {
         guest_id
       );
 
-      const updatedGuest = db.prepare('SELECT * FROM guests WHERE id = ?').get(guest_id);
+      const updatedGuest = await db.prepare('SELECT * FROM guests WHERE id = ?').get(guest_id);
       updatedGuests.push(updatedGuest);
     }
 

@@ -20,7 +20,7 @@ export async function PUT(
       );
     }
 
-    const guest = db.prepare('SELECT * FROM guests WHERE id = ?').get(id);
+    const guest = await db.prepare('SELECT * FROM guests WHERE id = ?').get(id);
     if (!guest) {
       return NextResponse.json({ error: 'Ospite non trovato' }, { status: 404 });
     }
@@ -31,7 +31,7 @@ export async function PUT(
       ? (menu_type || 'adulto')
       : null;
 
-    db.prepare(
+    await db.prepare(
       `UPDATE guests 
        SET response_status = ?, 
            response_date = ?,
@@ -41,7 +41,7 @@ export async function PUT(
        WHERE id = ?`
     ).run(response_status, responseDate, finalMenuType, dietary_requirements || null, id);
 
-    const updatedGuest = db.prepare('SELECT * FROM guests WHERE id = ?').get(id);
+    const updatedGuest = await db.prepare('SELECT * FROM guests WHERE id = ?').get(id);
     const { id: guestId, ...guestData } = updatedGuest as any;
     return NextResponse.json({ guest: guestData });
   } catch (error) {
