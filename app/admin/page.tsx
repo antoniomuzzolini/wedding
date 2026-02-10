@@ -363,17 +363,51 @@ export default function AdminPanel() {
   const declinedCount = guests.filter((g) => g.response_status === 'declined').length
   const pendingCount = guests.filter((g) => g.response_status === 'pending').length
 
-  // Counts for full ceremony (intera cerimonia)
+  // Counts for full ceremony (intera cerimonia) - structured by menu type and status
   const fullCeremonyGuests = guests.filter((g) => g.invitation_type === 'full')
-  const fullCeremonyAdults = fullCeremonyGuests.filter((g) => g.menu_type === 'adulto').length
-  const fullCeremonyBambini = fullCeremonyGuests.filter((g) => g.menu_type === 'bambino').length
-  const fullCeremonyNeonati = fullCeremonyGuests.filter((g) => g.menu_type === 'neonato').length
+  
+  // Adults counts
+  const fullCeremonyAdultsInvited = fullCeremonyGuests.filter((g) => g.menu_type === 'adulto').length
+  const fullCeremonyAdultsPending = fullCeremonyGuests.filter((g) => g.menu_type === 'adulto' && g.response_status === 'pending').length
+  const fullCeremonyAdultsConfirmed = fullCeremonyGuests.filter((g) => g.menu_type === 'adulto' && g.response_status === 'confirmed').length
+  const fullCeremonyAdultsDeclined = fullCeremonyGuests.filter((g) => g.menu_type === 'adulto' && g.response_status === 'declined').length
+  
+  // Children counts
+  const fullCeremonyBambiniInvited = fullCeremonyGuests.filter((g) => g.menu_type === 'bambino').length
+  const fullCeremonyBambiniPending = fullCeremonyGuests.filter((g) => g.menu_type === 'bambino' && g.response_status === 'pending').length
+  const fullCeremonyBambiniConfirmed = fullCeremonyGuests.filter((g) => g.menu_type === 'bambino' && g.response_status === 'confirmed').length
+  const fullCeremonyBambiniDeclined = fullCeremonyGuests.filter((g) => g.menu_type === 'bambino' && g.response_status === 'declined').length
+  
+  // Babies counts
+  const fullCeremonyNeonatiInvited = fullCeremonyGuests.filter((g) => g.menu_type === 'neonato').length
+  const fullCeremonyNeonatiPending = fullCeremonyGuests.filter((g) => g.menu_type === 'neonato' && g.response_status === 'pending').length
+  const fullCeremonyNeonatiConfirmed = fullCeremonyGuests.filter((g) => g.menu_type === 'neonato' && g.response_status === 'confirmed').length
+  const fullCeremonyNeonatiDeclined = fullCeremonyGuests.filter((g) => g.menu_type === 'neonato' && g.response_status === 'declined').length
 
-  // Counts for evening only (sera)
+  // Counts for evening only (sera) - total counts without age division
   const eveningGuests = guests.filter((g) => g.invitation_type === 'evening')
-  const eveningAdults = eveningGuests.filter((g) => g.menu_type === 'adulto').length
-  const eveningBambini = eveningGuests.filter((g) => g.menu_type === 'bambino').length
-  const eveningNeonati = eveningGuests.filter((g) => g.menu_type === 'neonato').length
+  const eveningInvited = eveningGuests.length
+  const eveningPending = eveningGuests.filter((g) => g.response_status === 'pending').length
+  const eveningConfirmed = eveningGuests.filter((g) => g.response_status === 'confirmed').length
+  const eveningDeclined = eveningGuests.filter((g) => g.response_status === 'declined').length
+
+  // Dietary requirements recap
+  const dietaryRequirements = guests
+    .filter((g) => g.dietary_requirements && g.dietary_requirements.trim() !== '')
+    .map((g) => ({
+      name: g.name,
+      surname: g.surname || '',
+      message: g.dietary_requirements || '',
+      invitation_type: g.invitation_type,
+      response_status: g.response_status,
+    }))
+    .sort((a, b) => {
+      // Sort by surname, then name
+      if (a.surname !== b.surname) {
+        return (a.surname || '').localeCompare(b.surname || '')
+      }
+      return a.name.localeCompare(b.name)
+    })
 
   // Check if form is valid for adding guest
   const canAddGuest = newGuest.name.trim() !== '' && newGuest.surname.trim() !== '' && newGuest.invitation_type && !loading && authenticated
@@ -412,20 +446,76 @@ export default function AdminPanel() {
             <h3 className="text-xl font-serif text-wedding-gold mb-4 text-center">
               Intera Cerimonia
             </h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-800">{fullCeremonyAdults}</div>
-                <div className="text-sm text-gray-600">Adulti</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-800">{fullCeremonyBambini}</div>
-                <div className="text-sm text-gray-600">Bambini</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-800">{fullCeremonyNeonati}</div>
-                <div className="text-sm text-gray-600">Neonati</div>
+            
+            {/* Adults Section */}
+            <div className="mb-4 pb-4 border-b border-gray-200">
+              <h4 className="text-lg font-semibold text-gray-700 mb-3">Adulti</h4>
+              <div className="grid grid-cols-4 gap-2 text-sm">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-gray-800">{fullCeremonyAdultsInvited}</div>
+                  <div className="text-xs text-gray-600">Invitati</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-gray-500">{fullCeremonyAdultsPending}</div>
+                  <div className="text-xs text-gray-600">In Attesa</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-green-700">{fullCeremonyAdultsConfirmed}</div>
+                  <div className="text-xs text-gray-600">Accettati</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-red-700">{fullCeremonyAdultsDeclined}</div>
+                  <div className="text-xs text-gray-600">Rifiutati</div>
+                </div>
               </div>
             </div>
+
+            {/* Children Section */}
+            <div className="mb-4 pb-4 border-b border-gray-200">
+              <h4 className="text-lg font-semibold text-gray-700 mb-3">Bambini</h4>
+              <div className="grid grid-cols-4 gap-2 text-sm">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-gray-800">{fullCeremonyBambiniInvited}</div>
+                  <div className="text-xs text-gray-600">Invitati</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-gray-500">{fullCeremonyBambiniPending}</div>
+                  <div className="text-xs text-gray-600">In Attesa</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-green-700">{fullCeremonyBambiniConfirmed}</div>
+                  <div className="text-xs text-gray-600">Accettati</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-red-700">{fullCeremonyBambiniDeclined}</div>
+                  <div className="text-xs text-gray-600">Rifiutati</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Babies Section */}
+            <div className="mb-4">
+              <h4 className="text-lg font-semibold text-gray-700 mb-3">Neonati</h4>
+              <div className="grid grid-cols-4 gap-2 text-sm">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-gray-800">{fullCeremonyNeonatiInvited}</div>
+                  <div className="text-xs text-gray-600">Invitati</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-gray-500">{fullCeremonyNeonatiPending}</div>
+                  <div className="text-xs text-gray-600">In Attesa</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-green-700">{fullCeremonyNeonatiConfirmed}</div>
+                  <div className="text-xs text-gray-600">Accettati</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-red-700">{fullCeremonyNeonatiDeclined}</div>
+                  <div className="text-xs text-gray-600">Rifiutati</div>
+                </div>
+              </div>
+            </div>
+
             <div className="mt-4 pt-4 border-t border-gray-200 text-center">
               <div className="text-lg font-semibold text-gray-700">
                 Totale: {fullCeremonyGuests.length}
@@ -438,27 +528,70 @@ export default function AdminPanel() {
             <h3 className="text-xl font-serif text-wedding-gold mb-4 text-center">
               Solo Serata
             </h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-800">{eveningAdults}</div>
-                <div className="text-sm text-gray-600">Adulti</div>
+                <div className="text-2xl font-bold text-gray-800">{eveningInvited}</div>
+                <div className="text-sm text-gray-600">Invitati</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-800">{eveningBambini}</div>
-                <div className="text-sm text-gray-600">Bambini</div>
+                <div className="text-2xl font-bold text-gray-500">{eveningPending}</div>
+                <div className="text-sm text-gray-600">In Attesa</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-800">{eveningNeonati}</div>
-                <div className="text-sm text-gray-600">Neonati</div>
+                <div className="text-2xl font-bold text-green-700">{eveningConfirmed}</div>
+                <div className="text-sm text-gray-600">Accettati</div>
               </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-              <div className="text-lg font-semibold text-gray-700">
-                Totale: {eveningGuests.length}
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-700">{eveningDeclined}</div>
+                <div className="text-sm text-gray-600">Rifiutati</div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Dietary Requirements Recap */}
+        {dietaryRequirements.length > 0 && (
+          <div className="bg-white/80 p-6 rounded-lg shadow-lg mb-8">
+            <h2 className="text-2xl font-serif text-wedding-gold mb-4">
+              Recap Richieste Alimentari e Intolleranze
+            </h2>
+            <div className="space-y-4">
+              {dietaryRequirements.map((req, index) => (
+                <div
+                  key={index}
+                  className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <span className="font-semibold text-gray-800">
+                        {req.name} {req.surname}
+                      </span>
+                      <span className="ml-2 text-sm text-gray-500">
+                        ({req.invitation_type === 'full' ? 'Cerimonia Completa' : 'Solo Serata'})
+                      </span>
+                    </div>
+                    <span
+                      className={`px-2 py-1 rounded text-xs ${
+                        req.response_status === 'confirmed'
+                          ? 'bg-green-100 text-green-800'
+                          : req.response_status === 'declined'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {req.response_status === 'confirmed'
+                        ? 'Confermato'
+                        : req.response_status === 'declined'
+                        ? 'Rifiutato'
+                        : 'In Attesa'}
+                    </span>
+                  </div>
+                  <div className="text-gray-700 whitespace-pre-wrap">{req.message}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Add Guest Form */}
         <div className="bg-white/80 p-6 rounded-lg shadow-lg mb-8">

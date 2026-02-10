@@ -240,7 +240,7 @@ function ConfirmAttendanceContent() {
     return (
       <div className="py-16 px-4 flex items-center justify-center">
         <div className="max-w-2xl mx-auto text-center bg-white/80 p-12 rounded-lg shadow-xl">
-          <div className="text-6xl mb-6">🎉</div>
+          {!hasConfirmedMembers && <div className="text-6xl mb-6">🎉</div>}
           <h1 className="text-4xl font-serif text-wedding-gold mb-4">
             Grazie!
           </h1>
@@ -252,15 +252,10 @@ function ConfirmAttendanceContent() {
           <button
             onClick={() => {
               setSubmitted(false)
-              setName('')
-              setSurname('')
-              setGuest(null)
-              setFamilyMembers([])
-              setMemberResponses([])
             }}
             className="bg-wedding-gold text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all"
           >
-            Invia un'altra risposta
+            Modifica la tua risposta
           </button>
         </div>
       </div>

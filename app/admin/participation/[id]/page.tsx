@@ -158,63 +158,61 @@ export default function ParticipationPage() {
         <div className="max-w-2xl w-full mx-auto print:max-w-full print:w-full print:h-full print:flex print:flex-col print:items-center print:justify-center print:px-12 print:py-8">
           {/* Main content */}
           <div className="text-center space-y-6 print:space-y-3 print:flex-1 print:flex print:flex-col print:justify-center">
-            {/* Opening phrase */}
-            <p className="text-wedding-sage-dark text-sm print:text-base font-serif tracking-wide print:mb-2">
-              Con infinita gioia
-            </p>
-
             {/* Couple names */}
             <div className="space-y-1 print:space-y-0">
               <h1 className="text-6xl print:text-6xl font-script text-wedding-gold leading-tight">
-                Francesca
-              </h1>
-              <p className="text-3xl print:text-3xl font-script text-wedding-gold -mt-2 print:-mt-1">
-                e
-              </p>
-              <h1 className="text-6xl print:text-6xl font-script text-wedding-gold leading-tight -mt-2 print:-mt-1">
-                Antonio
+                Francesca e Antonio
               </h1>
             </div>
 
             {/* Event announcement */}
-            <div className="space-y-2 print:space-y-1 text-wedding-sage-dark font-serif text-base print:text-lg leading-relaxed print:mt-3">
+            <div className="space-y-3 print:space-y-2 text-wedding-sage-dark font-serif text-base print:text-lg leading-relaxed print:mt-3">
               <p>
-                annunciano il loro matrimonio
-                {guest.invitation_type === 'full' 
-                  ? ' che verrà celebrato presso la'
-                  : ' e vi invitano alla festa serale presso'}
+                annunciano con gioia il loro matrimonio
               </p>
               
-              <p className="text-lg print:text-xl font-semibold uppercase tracking-wide text-wedding-gold print:mt-1">
+              <p className="text-4xl print:text-5xl font-script text-wedding-gold">
+                domenica 13 settembre 2026
+              </p>
+            </div>
+            
+            <div className="mt-6 print:mt-4 space-y-1 print:space-y-0">
+              <p className="text-xl print:text-2xl font-serif text-wedding-sage-dark uppercase">
                 Villa Caiselli
               </p>
-              
-              <p className="text-sm print:text-base print:mt-0">
-                Via della Ferrovia, 8 - Pavia di Udine
+              <p className="text-xl print:text-2xl font-serif text-wedding-sage-dark">
+                via della ferrovia 8, Pavia di Udine
               </p>
             </div>
 
-            {/* Date */}
-            <div className="pt-3 print:pt-2 print:mt-2">
-              <p className="text-4xl print:text-5xl font-script text-wedding-gold">
-                Domenica 13 Settembre 2026
-              </p>
-              <p className="text-base print:text-lg text-wedding-sage-dark font-serif mt-1 print:mt-0">
-                alle ore {getTime(guest.invitation_type)}
-              </p>
+            {/* Time sections */}
+            <div className="pt-4 print:pt-3 space-y-3 print:space-y-2">
+              {guest.invitation_type === 'full' ? (
+                <div className="text-base print:text-lg font-serif text-wedding-sage-dark">
+                  <p>Ti aspettano alle ore 12 per celebrare e festeggiare assieme questo grande giorno</p>
+                </div>
+              ) : (
+                <div className="text-base print:text-lg font-serif text-wedding-sage-dark">
+                  <p>Ti aspettano alle ore 20 per brindare e festeggiare assieme questo grande giorno</p>
+                </div>
+              )}
             </div>
 
-            {/* Guest name (subtle) */}
-            <div className="pt-4 print:pt-2 border-t border-wedding-sage-medium border-opacity-30 mt-6 print:mt-3">
-              <p className="text-sm print:text-sm text-wedding-sage-dark font-serif italic">
-                {familyMembers.length > 1 ? 'Famiglia' : ''} {guest.name} {guest.surname || ''}
-              </p>
+            {/* Guest names list */}
+            <div className="pt-4 print:pt-3 border-t border-wedding-sage-medium border-opacity-30 mt-6 print:mt-3">
+              <div className="text-base print:text-lg text-wedding-sage-dark font-serif">
+                {familyMembers.map((member, index) => (
+                  <p key={member.id} className={index > 0 ? 'mt-1 print:mt-0' : ''}>
+                    {member.name} {member.surname || ''}
+                  </p>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* QR Code - bottom in print */}
           <div className="pt-8 print:pt-4 print:mt-auto print:flex-shrink-0 flex flex-col items-center">
-            <p className="text-xs print:text-sm text-wedding-sage-dark font-serif mb-4 print:mb-3 italic print:text-center">
+            <p className="text-base print:text-lg text-wedding-sage-dark font-serif mb-4 print:mb-3 italic print:text-center">
               Scansiona il qr code oppure contattaci per confermare la tua presenza
             </p>
             {confirmationUrl && (
