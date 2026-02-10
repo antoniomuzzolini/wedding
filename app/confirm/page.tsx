@@ -24,11 +24,31 @@ function ConfirmAttendanceContent() {
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
+  // Helper function to save guest code to cache (expires in 1 day)
+  const saveGuestCodeToCache = (code: string) => {
+    if (typeof window === 'undefined') return
+    
+    try {
+      const expiresAt = Date.now() + (24 * 60 * 60 * 1000) // 1 day in milliseconds
+      localStorage.setItem('guestConfirmationCode', JSON.stringify({
+        code,
+        expiresAt,
+      }))
+      // Dispatch custom event to notify Navigation component
+      window.dispatchEvent(new Event('guestCodeSaved'))
+    } catch (err) {
+      console.error('Error saving guest code to cache:', err)
+    }
+  }
+
   // Check for ID parameter in URL on mount
   useEffect(() => {
     const idParam = searchParams.get('id')
     if (idParam) {
-      // Decode base64url ID
+      // Save guest code to cache when accessed via QR code
+      saveGuestCodeToCache(idParam)
+      
+      // Decode base64url ID (supports both old and new format)
       try {
         const decodeId = (encoded: string): number => {
           if (typeof window !== 'undefined' && typeof atob !== 'undefined') {
@@ -43,9 +63,16 @@ function ConfirmAttendanceContent() {
                 base64 += '='
               }
               
-              return parseInt(atob(base64))
+              const decoded = atob(base64)
+              // Try to extract ID from the decoded string (format: "ID-secret-timestamp")
+              const match = decoded.match(/^(\d+)-/)
+              if (match) {
+                return parseInt(match[1])
+              }
+              // Fallback: try parsing the whole decoded string as number (backward compatibility)
+              return parseInt(decoded)
             } catch {
-              // If it fails, try parsing directly (for backward compatibility)
+              // If it fails, try parsing directly (for backward compatibility with old short URLs)
               return parseInt(encoded)
             }
           }
@@ -65,6 +92,9 @@ function ConfirmAttendanceContent() {
       } catch (err) {
         setError('Link di conferma non valido')
       }
+    } else {
+      // No ID parameter - show error since manual search is disabled
+      setError('Link di conferma non valido. Utilizza il link fornito nell\'invito.')
     }
   }, [searchParams])
 
@@ -246,6 +276,8 @@ function ConfirmAttendanceContent() {
 
         {!guest ? (
           <div className="bg-white/80 p-8 rounded-lg shadow-lg">
+            {/* Manual search disabled - only accessible via direct URL */}
+            {/* 
             <div className="grid md:grid-cols-2 gap-4 mb-6">
               <div>
                 <label htmlFor="name" className="block text-gray-700 font-medium mb-2">
@@ -286,6 +318,18 @@ function ConfirmAttendanceContent() {
             >
               {loading ? 'Ricerca in corso...' : 'Trova il Mio Invito'}
             </button>
+            */}
+            <div className="text-center py-8">
+              <p className="text-lg text-gray-700 mb-4">
+                Questa pagina è accessibile solo tramite il link fornito nell'invito.
+              </p>
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg">{error}</div>
+              )}
+              {loading && (
+                <div className="text-gray-600">Caricamento...</div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="bg-white/80 p-8 rounded-lg shadow-lg space-y-6">

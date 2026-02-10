@@ -4,11 +4,35 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 
+// Helper function to check if guest code is cached and valid
+const getCachedGuestCode = (): string | null => {
+  if (typeof window === 'undefined') return null
+  
+  try {
+    const cached = localStorage.getItem('guestConfirmationCode')
+    if (!cached) return null
+    
+    const { code, expiresAt } = JSON.parse(cached)
+    const now = Date.now()
+    
+    // Check if cache has expired (1 day = 24 * 60 * 60 * 1000 ms)
+    if (now > expiresAt) {
+      localStorage.removeItem('guestConfirmationCode')
+      return null
+    }
+    
+    return code
+  } catch {
+    return null
+  }
+}
+
 export default function Navigation() {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [lastScrollY, setLastScrollY] = useState(0)
+  const [cachedGuestCode, setCachedGuestCode] = useState<string | null>(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,13 +59,49 @@ export default function Navigation() {
     setMobileMenuOpen(false)
   }, [pathname])
 
-  const navItems = [
+  // Check for cached guest code on mount and when pathname changes
+  useEffect(() => {
+    const code = getCachedGuestCode()
+    setCachedGuestCode(code)
+    
+    // Listen for storage changes to update when guest code is saved
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'guestConfirmationCode') {
+        const code = getCachedGuestCode()
+        setCachedGuestCode(code)
+      }
+    }
+    
+    // Also listen for custom event for same-window updates
+    const handleCustomStorageChange = () => {
+      const code = getCachedGuestCode()
+      setCachedGuestCode(code)
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('guestCodeSaved', handleCustomStorageChange)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('guestCodeSaved', handleCustomStorageChange)
+    }
+  }, [pathname])
+
+  const baseNavItems = [
     { href: '/', label: 'Benvenuto' },
     { href: '/us', label: 'Noi' },
-    { href: '/confirm', label: 'Conferma Presenza' },
     { href: '/gift-list', label: 'Lista Nozze' },
     { href: '/contacts', label: 'Contatti' },
   ]
+
+  // Add "Conferma Presenza" only if guest code is cached
+  const navItems = cachedGuestCode
+    ? [
+        ...baseNavItems.slice(0, 2),
+        { href: `/confirm?id=${cachedGuestCode}`, label: 'Conferma Presenza' },
+        ...baseNavItems.slice(2),
+      ]
+    : baseNavItems
 
   return (
     <nav className="bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-50">

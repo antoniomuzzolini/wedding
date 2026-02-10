@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Playfair_Display } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/components/Navigation'
@@ -12,7 +12,6 @@ const playfairDisplay = Playfair_Display({
 export const metadata: Metadata = {
   title: 'The Puzzles Wedding',
   description: 'Unisciti a noi per celebrare il nostro giorno speciale',
-  themeColor: '#7A9C96',
   icons: {
     icon: [
       { url: '/icon.png', sizes: '512x512', type: 'image/png' },
@@ -29,6 +28,10 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'The Puzzles Wedding',
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#7A9C96',
 }
 
 export default function RootLayout({

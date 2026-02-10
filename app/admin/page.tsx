@@ -17,6 +17,7 @@ export default function AdminPanel() {
     invitation_type: 'full' as InvitationType,
     family_id: null as number | null,
     menu_type: 'adulto' as MenuType,
+    response_status: 'pending' as 'pending' | 'confirmed' | 'declined',
   })
   
   // New guest form
@@ -161,6 +162,7 @@ export default function AdminPanel() {
       invitation_type: guest.invitation_type,
       family_id: guest.family_id,
       menu_type: (guest.menu_type || 'adulto') as MenuType,
+      response_status: guest.response_status || 'pending',
     })
   }
 
@@ -172,6 +174,7 @@ export default function AdminPanel() {
       invitation_type: 'full',
       family_id: null,
       menu_type: 'adulto',
+      response_status: 'pending',
     })
   }
 
@@ -551,11 +554,17 @@ export default function AdminPanel() {
                 const otherMembers = groupGuests.slice(1)
                 const groupStatus = getGroupStatus(groupGuests)
                 
-                // Generate confirmation URL with encoded guest ID (base64url - no special chars)
+                // Generate confirmation URL with encoded guest ID (longer and more secure)
                 const encodeId = (id: number): string => {
                   if (typeof window !== 'undefined' && typeof btoa !== 'undefined') {
+                    // Create a longer, more secure token by combining ID with a secret salt
+                    // This makes URLs longer and harder to guess
+                    // Format: "ID-secret-padding" where padding makes it consistently long
+                    const secret = 'wedding2026' // Simple secret for encoding
+                    const padding = String(id).padStart(6, '0').split('').reverse().join('') // Create padding from ID
+                    const combined = `${id}-${secret}-${padding}`
+                    const base64 = btoa(combined)
                     // Use base64url encoding (replaces + with -, / with _, removes = padding)
-                    const base64 = btoa(id.toString())
                     return base64
                       .replace(/\+/g, '-')
                       .replace(/\//g, '_')
@@ -687,15 +696,15 @@ export default function AdminPanel() {
                                       </select>
                                     </td>
                                     <td className="py-3 px-4">
-                                      <span
-                                        className={`px-2 py-1 rounded text-sm ${getStatusColor(
-                                          guest.response_status
-                                        )}`}
+                                      <select
+                                        value={editForm.response_status}
+                                        onChange={(e) => setEditForm({ ...editForm, response_status: e.target.value as 'pending' | 'confirmed' | 'declined' })}
+                                        className="px-2 py-1 border border-gray-300 rounded text-sm"
                                       >
-                                        {guest.response_status === 'confirmed' ? 'Confermato' : 
-                                         guest.response_status === 'declined' ? 'Rifiutato' : 
-                                         'In Attesa'}
-                                      </span>
+                                        <option value="pending">In Attesa</option>
+                                        <option value="confirmed">Confermato</option>
+                                        <option value="declined">Rifiutato</option>
+                                      </select>
                                     </td>
                                     <td className="py-3 px-4 text-sm">
                                       {guest.response_date

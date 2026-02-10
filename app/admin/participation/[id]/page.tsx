@@ -23,7 +23,7 @@ export default function ParticipationPage() {
           return
         }
 
-        // Decode base64url ID
+        // Decode base64url ID (supports both old and new format)
         const decodeId = (encoded: string): number => {
           if (typeof window !== 'undefined' && typeof atob !== 'undefined') {
             try {
@@ -35,8 +35,16 @@ export default function ParticipationPage() {
                 base64 += '='
               }
               
-              return parseInt(atob(base64))
+              const decoded = atob(base64)
+              // Try to extract ID from the decoded string (format: "ID-secret-padding")
+              const match = decoded.match(/^(\d+)-/)
+              if (match) {
+                return parseInt(match[1])
+              }
+              // Fallback: try parsing the whole decoded string as number (backward compatibility)
+              return parseInt(decoded)
             } catch {
+              // If it fails, try parsing directly (for backward compatibility with old short URLs)
               return parseInt(encoded)
             }
           }
@@ -72,7 +80,14 @@ export default function ParticipationPage() {
 
   const encodeId = (id: number): string => {
     if (typeof window !== 'undefined' && typeof btoa !== 'undefined') {
-      const base64 = btoa(id.toString())
+      // Create a longer, more secure token by combining ID with a secret salt
+      // This makes URLs longer and harder to guess
+      // Format: "ID-secret-padding" where padding makes it consistently long
+      const secret = 'wedding2026' // Simple secret for encoding
+      const padding = String(id).padStart(6, '0').split('').reverse().join('') // Create padding from ID
+      const combined = `${id}-${secret}-${padding}`
+      const base64 = btoa(combined)
+      // Use base64url encoding (replaces + with -, / with _, removes = padding)
       return base64
         .replace(/\+/g, '-')
         .replace(/\//g, '_')

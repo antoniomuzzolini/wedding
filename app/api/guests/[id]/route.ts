@@ -10,7 +10,7 @@ export async function PUT(
     const { id: idParam } = await params;
     const id = parseInt(idParam);
     const body = await request.json();
-    const { name, surname, invitation_type, family_id, menu_type, adminKey } = body;
+    const { name, surname, invitation_type, family_id, menu_type, response_status, adminKey } = body;
 
     // Simple admin check - REPLACE WITH PROPER AUTH IN PRODUCTION
     if (adminKey !== process.env.ADMIN_KEY) {
@@ -42,6 +42,10 @@ export async function PUT(
     }
 
     // Update guest
+    const finalResponseStatus = response_status !== undefined 
+      ? response_status 
+      : (existingGuest as any).response_status || 'pending';
+    
     await db.prepare(
       `UPDATE guests 
        SET name = ?, 
@@ -49,6 +53,7 @@ export async function PUT(
            invitation_type = ?,
            family_id = ?,
            menu_type = ?,
+           response_status = ?,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`
     ).run(
@@ -57,6 +62,7 @@ export async function PUT(
       invitation_type || (existingGuest as any).invitation_type,
       finalFamilyId,
       menu_type || (existingGuest as any).menu_type || 'adulto',
+      finalResponseStatus,
       id
     );
 
