@@ -39,6 +39,7 @@ export default function Navigation() {
     { href: '/', label: 'Benvenuto' },
     { href: '/us', label: 'Noi' },
     { href: '/confirm', label: 'Conferma Presenza' },
+    { href: '/gift-list', label: 'Lista Nozze' },
     { href: '/contacts', label: 'Contatti' },
   ]
 

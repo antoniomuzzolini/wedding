@@ -6,7 +6,7 @@ export default function Welcome() {
       {/* Header Image */}
       <div className="w-full max-w-6xl mb-8 relative h-64 md:h-96 rounded-lg overflow-hidden shadow-xl">
         <Image
-          src="/images/headers/header.jpg"
+          src="/images/welcome.jpg"
           alt="Header Matrimonio"
           fill
           className="object-cover"
