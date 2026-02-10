@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 
 export default function GiftList() {
-  const iban = 'IT60 X054 2811 1010 0000 0123 4567'
+  const iban = 'IT26 H050 3401 7530 0000 0176 451'
   const ibanClean = iban.replace(/\s/g, '') // Rimuove spazi per la copia
   const accountHolder = 'Muzzolini Antonio, Poles Francesca'
   const [ibanCopied, setIbanCopied] = useState(false)

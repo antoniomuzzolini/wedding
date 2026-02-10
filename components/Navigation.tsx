@@ -3,29 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-
-// Helper function to check if guest code is cached and valid
-const getCachedGuestCode = (): string | null => {
-  if (typeof window === 'undefined') return null
-  
-  try {
-    const cached = localStorage.getItem('guestConfirmationCode')
-    if (!cached) return null
-    
-    const { code, expiresAt } = JSON.parse(cached)
-    const now = Date.now()
-    
-    // Check if cache has expired (1 day = 24 * 60 * 60 * 1000 ms)
-    if (now > expiresAt) {
-      localStorage.removeItem('guestConfirmationCode')
-      return null
-    }
-    
-    return code
-  } catch {
-    return null
-  }
-}
+import { getCachedGuestCode } from '@/lib/utils/guest-cache'
 
 export default function Navigation() {
   const pathname = usePathname()

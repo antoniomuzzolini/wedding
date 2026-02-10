@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import QRCode from 'react-qr-code'
 import { Guest } from '@/lib/types'
+import { decodeGuestId, encodeGuestId, isValidGuestId } from '@/lib/utils/guest-id'
+import { lookupGuestById } from '@/lib/utils/guest-lookup'
+import { PARTICIPATION_MESSAGES, WEDDING_CONSTANTS } from '@/lib/utils/constants'
 import './participation.css'
 
 export default function ParticipationPage() {
@@ -23,53 +26,19 @@ export default function ParticipationPage() {
           return
         }
 
-        // Decode base64url ID (supports both old and new format)
-        const decodeId = (encoded: string): number => {
-          if (typeof window !== 'undefined' && typeof atob !== 'undefined') {
-            try {
-              let base64 = encoded
-                .replace(/-/g, '+')
-                .replace(/_/g, '/')
-              
-              while (base64.length % 4) {
-                base64 += '='
-              }
-              
-              const decoded = atob(base64)
-              // Try to extract ID from the decoded string (format: "ID-secret-padding")
-              const match = decoded.match(/^(\d+)-/)
-              if (match) {
-                return parseInt(match[1])
-              }
-              // Fallback: try parsing the whole decoded string as number (backward compatibility)
-              return parseInt(decoded)
-            } catch {
-              // If it fails, try parsing directly (for backward compatibility with old short URLs)
-              return parseInt(encoded)
-            }
-          }
-          return parseInt(encoded)
-        }
-
-        const guestId = decodeId(idParam)
+        const guestId = decodeGuestId(idParam)
         
-        if (isNaN(guestId) || guestId <= 0) {
+        if (!isValidGuestId(guestId)) {
           setError('ID ospite non valido')
           setLoading(false)
           return
         }
 
-        const response = await fetch(`/api/guests/confirm/${guestId}`)
-        const data = await response.json()
-
-        if (response.ok) {
-          setGuest(data.guest)
-          setFamilyMembers(data.familyMembers || [data.guest])
-        } else {
-          setError(data.error || 'Ospite non trovato')
-        }
-      } catch (err) {
-        setError('Si è verificato un errore')
+        const { guest: fetchedGuest, familyMembers: fetchedMembers } = await lookupGuestById(guestId)
+        setGuest(fetchedGuest)
+        setFamilyMembers(fetchedMembers)
+      } catch (err: any) {
+        setError(err.message || 'Si è verificato un errore')
       } finally {
         setLoading(false)
       }
@@ -77,32 +46,6 @@ export default function ParticipationPage() {
 
     loadGuest()
   }, [params.id])
-
-  const encodeId = (id: number): string => {
-    if (typeof window !== 'undefined' && typeof btoa !== 'undefined') {
-      // Create a longer, more secure token by combining ID with a secret salt
-      // This makes URLs longer and harder to guess
-      // Format: "ID-secret-padding" where padding makes it consistently long
-      const secret = 'wedding2026' // Simple secret for encoding
-      const padding = String(id).padStart(6, '0').split('').reverse().join('') // Create padding from ID
-      const combined = `${id}-${secret}-${padding}`
-      const base64 = btoa(combined)
-      // Use base64url encoding (replaces + with -, / with _, removes = padding)
-      return base64
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, '')
-    }
-    return id.toString()
-  }
-
-  const getInvitationTypeLabel = (type: string) => {
-    return type === 'full' ? 'Cerimonia Completa' : 'Solo Serata'
-  }
-
-  const getTime = (type: string) => {
-    return type === 'full' ? '12' : '20'
-  }
 
   if (loading) {
     return (
@@ -125,7 +68,7 @@ export default function ParticipationPage() {
   }
 
   const confirmationUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/confirm?id=${encodeId(guest.id)}`
+    ? `${window.location.origin}/confirm?id=${encodeGuestId(guest.id)}`
     : ''
 
   return (
@@ -161,7 +104,7 @@ export default function ParticipationPage() {
             {/* Couple names */}
             <div className="space-y-1 print:space-y-0">
               <h1 className="text-6xl print:text-6xl font-script text-wedding-gold leading-tight">
-                Francesca e Antonio
+                {WEDDING_CONSTANTS.COUPLE_NAMES}
               </h1>
             </div>
 
@@ -172,16 +115,16 @@ export default function ParticipationPage() {
               </p>
               
               <p className="text-4xl print:text-5xl font-script text-wedding-gold">
-                domenica 13 settembre 2026
+                {WEDDING_CONSTANTS.WEDDING_DATE}
               </p>
             </div>
             
             <div className="mt-6 print:mt-4 space-y-1 print:space-y-0">
               <p className="text-xl print:text-2xl font-serif text-wedding-sage-dark uppercase">
-                Villa Caiselli
+                {WEDDING_CONSTANTS.VENUE_NAME}
               </p>
               <p className="text-xl print:text-2xl font-serif text-wedding-sage-dark">
-                via della ferrovia 8, Pavia di Udine
+                {WEDDING_CONSTANTS.VENUE_ADDRESS}
               </p>
             </div>
 
@@ -191,19 +134,19 @@ export default function ParticipationPage() {
                 <div className="text-base print:text-lg font-serif text-wedding-sage-dark">
                   <p>
                     {familyMembers.length > 1 
-                      ? 'Vi aspettano alle ore 12 per celebrare e festeggiare assieme questo grande giorno.'
-                      : 'Ti aspettano alle ore 12 per celebrare e festeggiare assieme questo grande giorno.'}
+                      ? PARTICIPATION_MESSAGES.FULL_CEREMONY.MULTIPLE
+                      : PARTICIPATION_MESSAGES.FULL_CEREMONY.SINGLE}
                   </p>
                   <p>
-                    Seguirà sempre in villa il ricevimento con il pranzo.
+                    {PARTICIPATION_MESSAGES.FULL_CEREMONY.FOLLOW_UP}
                   </p>
                 </div>
               ) : (
                 <div className="text-base print:text-lg font-serif text-wedding-sage-dark">
                   <p>
                     {familyMembers.length > 1
-                      ? 'Vi aspettano per festeggiare con voi dalle ore 20.00 per il brindisi con taglio della torta.'
-                      : 'Ti aspettano per festeggiare con te dalle ore 20.00 per il brindisi con taglio della torta.'}
+                      ? PARTICIPATION_MESSAGES.EVENING.MULTIPLE
+                      : PARTICIPATION_MESSAGES.EVENING.SINGLE}
                   </p>
                 </div>
               )}
@@ -225,8 +168,8 @@ export default function ParticipationPage() {
           <div className="pt-8 print:pt-4 print:mt-auto print:flex-shrink-0 flex flex-col items-center">
             <p className="text-base print:text-lg text-wedding-sage-dark font-serif mb-4 print:mb-3 italic print:text-center">
               {familyMembers.length > 1
-                ? 'Scansiona il qr code oppure contattaci per confermare la vostra presenza'
-                : 'Scansiona il qr code oppure contattaci per confermare la tua presenza'}
+                ? PARTICIPATION_MESSAGES.QR_CODE.MULTIPLE
+                : PARTICIPATION_MESSAGES.QR_CODE.SINGLE}
             </p>
             {confirmationUrl && (
               <div className="bg-white p-3 print:p-3 shadow-sm print:shadow-none print:bg-transparent">
