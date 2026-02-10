@@ -12,6 +12,7 @@ const playfairDisplay = Playfair_Display({
 export const metadata: Metadata = {
   title: 'The Puzzles Wedding',
   description: 'Unisciti a noi per celebrare il nostro giorno speciale',
+  themeColor: '#7A9C96',
   icons: {
     icon: [
       { url: '/icon.png', sizes: '512x512', type: 'image/png' },
