@@ -225,14 +225,6 @@ function ConfirmAttendanceContent() {
     }
   }
 
-  const getUnifiedMessage = (type: InvitationType, isFamily: boolean) => {
-    const time = type === 'full' ? '12' : '20'
-    const familyPart = isFamily 
-      ? " Vi chiediamo di confermare la presenza per tutti i membri della famiglia."
-      : ""
-    
-    return `Siamo felici di avervi con noi in questo giorno speciale! Il ritrovo è alle ore ${time}.${familyPart}`
-  }
 
   const hasConfirmedMembers = memberResponses.some(mr => mr.response_status === 'confirmed')
 
@@ -328,10 +320,34 @@ function ConfirmAttendanceContent() {
           </div>
         ) : (
           <div className="bg-white/80 p-8 rounded-lg shadow-lg space-y-6">
-            <div className="text-center mb-6">
-              <p className="text-lg text-gray-700">
-                {getUnifiedMessage(guest.invitation_type, familyMembers.length > 1)}
-              </p>
+            <div className="text-center mb-6 space-y-2">
+              {guest.invitation_type === 'full' ? (
+                <>
+                  <p className="text-lg text-gray-700">
+                    {familyMembers.length > 1
+                      ? 'Siamo felici di avervi con noi in questo giorno speciale! Vi aspettiamo alle ore 12 per celebrare e festeggiare assieme questo grande giorno. Seguirà in villa il ricevimento con il pranzo.'
+                      : 'Siamo felici di averti con noi in questo giorno speciale! Ti aspettiamo alle ore 12 per celebrare e festeggiare assieme questo grande giorno. Seguirà in villa il ricevimento con il pranzo.'}
+                  </p>
+                  {familyMembers.length > 1 && (
+                    <p className="text-lg text-gray-700">
+                      Vi chiediamo di confermare la presenza per tutti i membri della famiglia.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="text-lg text-gray-700">
+                    {familyMembers.length > 1
+                      ? 'Siamo felici di avervi con noi in questo giorno speciale! Vi aspettiamo per festeggiare con voi dalle ore 20.00 per il brindisi con taglio della torta.'
+                      : 'Siamo felici di averti con noi in questo giorno speciale! Ti aspettiamo per festeggiare con te dalle ore 20.00 per il brindisi con taglio della torta.'}
+                  </p>
+                  {familyMembers.length > 1 && (
+                    <p className="text-lg text-gray-700">
+                      Vi chiediamo di confermare la presenza per tutti i membri della famiglia.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Form for each family member */}

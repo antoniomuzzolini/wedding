@@ -189,11 +189,22 @@ export default function ParticipationPage() {
             <div className="pt-4 print:pt-3 space-y-3 print:space-y-2">
               {guest.invitation_type === 'full' ? (
                 <div className="text-base print:text-lg font-serif text-wedding-sage-dark">
-                  <p>Ti aspettano alle ore 12 per celebrare e festeggiare assieme questo grande giorno</p>
+                  <p>
+                    {familyMembers.length > 1 
+                      ? 'Vi aspettano alle ore 12 per celebrare e festeggiare assieme questo grande giorno.'
+                      : 'Ti aspettano alle ore 12 per celebrare e festeggiare assieme questo grande giorno.'}
+                  </p>
+                  <p>
+                    Seguirà sempre in villa il ricevimento con il pranzo.
+                  </p>
                 </div>
               ) : (
                 <div className="text-base print:text-lg font-serif text-wedding-sage-dark">
-                  <p>Ti aspettano alle ore 20 per brindare e festeggiare assieme questo grande giorno</p>
+                  <p>
+                    {familyMembers.length > 1
+                      ? 'Vi aspettano per festeggiare con voi dalle ore 20.00 per il brindisi con taglio della torta.'
+                      : 'Ti aspettano per festeggiare con te dalle ore 20.00 per il brindisi con taglio della torta.'}
+                  </p>
                 </div>
               )}
             </div>
@@ -213,7 +224,9 @@ export default function ParticipationPage() {
           {/* QR Code - bottom in print */}
           <div className="pt-8 print:pt-4 print:mt-auto print:flex-shrink-0 flex flex-col items-center">
             <p className="text-base print:text-lg text-wedding-sage-dark font-serif mb-4 print:mb-3 italic print:text-center">
-              Scansiona il qr code oppure contattaci per confermare la tua presenza
+              {familyMembers.length > 1
+                ? 'Scansiona il qr code oppure contattaci per confermare la vostra presenza'
+                : 'Scansiona il qr code oppure contattaci per confermare la tua presenza'}
             </p>
             {confirmationUrl && (
               <div className="bg-white p-3 print:p-3 shadow-sm print:shadow-none print:bg-transparent">
