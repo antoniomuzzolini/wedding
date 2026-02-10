@@ -1,4 +1,15 @@
 import Image from 'next/image'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Home',
+  description: 'Benvenuti al matrimonio di Francesca Poles e Antonio Muzzolini. Unisciti a noi il 13 Settembre 2026 a Villa Caiselli, Pavia di Udine per celebrare il nostro giorno speciale.',
+  openGraph: {
+    title: 'The Puzzles Wedding - Matrimonio Francesca e Antonio',
+    description: 'Unisciti a noi per celebrare il nostro giorno speciale il 13 Settembre 2026',
+    images: ['/images/welcome.jpg'],
+  },
+}
 
 export default function Welcome() {
   return (
@@ -7,7 +18,7 @@ export default function Welcome() {
       <div className="w-full max-w-6xl mb-8 relative h-64 md:h-96 rounded-lg overflow-hidden shadow-xl">
         <Image
           src="/images/welcome.jpg"
-          alt="Header Matrimonio"
+          alt="Francesca Poles e Antonio Muzzolini - Matrimonio 13 Settembre 2026 Villa Caiselli"
           fill
           className="object-cover"
           priority

@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="w-full relative h-48 md:h-64 overflow-hidden">
         <Image
           src="/images/headers/footer.jpg"
-          alt="Wedding Footer"
+          alt="The Puzzles Wedding - Footer"
           fill
           className="object-cover"
         />

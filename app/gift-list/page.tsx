@@ -42,7 +42,7 @@ export default function GiftList() {
           <div className="relative w-full max-w-md mx-auto mb-8 aspect-[4/3] rounded-lg overflow-hidden shadow-xl">
             <Image
               src="/images/gift-list.jpg"
-              alt="Francesca e Antonio"
+              alt="Francesca Poles e Antonio Muzzolini - Lista Nozze"
               fill
               className="object-cover"
               priority
