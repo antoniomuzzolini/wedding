@@ -6,7 +6,10 @@ import { FamilyMemberResponse } from '@/lib/types';
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { responses } = body as { responses: FamilyMemberResponse[] };
+    const { responses, notification_email } = body as { 
+      responses: FamilyMemberResponse[];
+      notification_email?: string;
+    };
 
     if (!Array.isArray(responses) || responses.length === 0) {
       return NextResponse.json(
@@ -17,6 +20,40 @@ export async function PUT(request: NextRequest) {
 
     const responseDate = new Date().toISOString();
     const updatedGuests = [];
+
+    // Identify the group leader
+    // The group leader is:
+    // 1. The guest without family_id (if they are the main guest or single guest)
+    // 2. The guest whose id matches someone else's family_id
+    let groupLeaderId: number | null = null;
+    
+    // First, get all guests to check their family_id relationships
+    const guestIds = responses.map(r => r.guest_id);
+    const guestsData = await Promise.all(
+      guestIds.map(id => db.prepare('SELECT id, family_id FROM guests WHERE id = ?').get(id))
+    );
+    
+    // Find guests with family_id to identify the main guest
+    const guestsWithFamilyId = guestsData.filter((g: any) => g && g.family_id);
+    
+    if (guestsWithFamilyId.length > 0) {
+      // There are linked guests - the group leader is the one with id === family_id
+      const mainGuestId = (guestsWithFamilyId[0] as any).family_id;
+      if (guestIds.includes(mainGuestId)) {
+        groupLeaderId = mainGuestId;
+      }
+    } else {
+      // No linked guests - find the guest without family_id (single guest or main guest)
+      const guestWithoutFamilyId = guestsData.find((g: any) => g && !g.family_id);
+      if (guestWithoutFamilyId) {
+        groupLeaderId = (guestWithoutFamilyId as any).id;
+      }
+    }
+    
+    // Fallback: if no group leader found, use the first guest (lowest id)
+    if (!groupLeaderId && guestIds.length > 0) {
+      groupLeaderId = Math.min(...guestIds);
+    }
 
     for (const response of responses) {
       const { guest_id, response_status, menu_type, dietary_requirements } = response;
@@ -53,6 +90,20 @@ export async function PUT(request: NextRequest) {
 
       const updatedGuest = await db.prepare('SELECT * FROM guests WHERE id = ?').get(guest_id);
       updatedGuests.push(updatedGuest);
+    }
+
+    // Save notification email on the group leader if provided
+    if (notification_email && notification_email.trim() && groupLeaderId) {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(notification_email.trim())) {
+        await db.prepare(
+          `UPDATE guests 
+           SET email = ?, 
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?`
+        ).run(notification_email.trim(), groupLeaderId);
+      }
     }
 
     return NextResponse.json({ guests: updatedGuests });

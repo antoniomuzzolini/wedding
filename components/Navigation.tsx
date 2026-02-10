@@ -11,6 +11,7 @@ export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [lastScrollY, setLastScrollY] = useState(0)
   const [cachedGuestCode, setCachedGuestCode] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,16 +38,30 @@ export default function Navigation() {
     setMobileMenuOpen(false)
   }, [pathname])
 
-  // Check for cached guest code on mount and when pathname changes
+  // Check for cached guest code and admin authentication on mount and when pathname changes
   useEffect(() => {
     const code = getCachedGuestCode()
     setCachedGuestCode(code)
+    
+    // Check admin authentication
+    const checkAdminAuth = () => {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('adminAuthenticated')
+        const storedKey = localStorage.getItem('adminKey')
+        setIsAdmin(stored === 'true' && !!storedKey)
+      }
+    }
+    
+    checkAdminAuth()
     
     // Listen for storage changes to update when guest code is saved
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'guestConfirmationCode') {
         const code = getCachedGuestCode()
         setCachedGuestCode(code)
+      }
+      if (e.key === 'adminAuthenticated' || e.key === 'adminKey') {
+        checkAdminAuth()
       }
     }
     
@@ -56,12 +71,19 @@ export default function Navigation() {
       setCachedGuestCode(code)
     }
     
+    // Listen for admin auth changes
+    const handleAdminAuthChange = () => {
+      checkAdminAuth()
+    }
+    
     window.addEventListener('storage', handleStorageChange)
     window.addEventListener('guestCodeSaved', handleCustomStorageChange)
+    window.addEventListener('adminAuthChanged', handleAdminAuthChange)
     
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('guestCodeSaved', handleCustomStorageChange)
+      window.removeEventListener('adminAuthChanged', handleAdminAuthChange)
     }
   }, [pathname])
 
@@ -73,13 +95,22 @@ export default function Navigation() {
   ]
 
   // Add "Conferma Presenza" only if guest code is cached
-  const navItems = cachedGuestCode
+  let navItems = cachedGuestCode
     ? [
         ...baseNavItems.slice(0, 2),
         { href: `/confirm?id=${cachedGuestCode}`, label: 'Conferma Presenza' },
         ...baseNavItems.slice(2),
       ]
     : baseNavItems
+
+  // Add admin links if authenticated
+  if (isAdmin) {
+    navItems = [
+      ...navItems,
+      { href: '/admin', label: 'Admin' },
+      { href: '/admin/notifications', label: 'Invio Notifiche' },
+    ]
+  }
 
   return (
     <nav className="bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-50">

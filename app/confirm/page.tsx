@@ -20,6 +20,7 @@ function ConfirmAttendanceContent() {
   const [guest, setGuest] = useState<any>(null)
   const [familyMembers, setFamilyMembers] = useState<any[]>([])
   const [memberResponses, setMemberResponses] = useState<MemberResponse[]>([])
+  const [notificationEmail, setNotificationEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -81,8 +82,20 @@ function ConfirmAttendanceContent() {
     setMemberResponses(updated)
   }
 
+  const validateEmail = (email: string): boolean => {
+    if (!email) return true // Email is optional
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
   const submitResponse = async () => {
     if (!guest || memberResponses.length === 0) return
+
+    // Validate email format if provided
+    if (notificationEmail && !validateEmail(notificationEmail)) {
+      setError('Formato email non valido')
+      return
+    }
 
     setLoading(true)
     setError('')
@@ -98,7 +111,10 @@ function ConfirmAttendanceContent() {
       const response = await fetch('/api/guests/family/response', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ responses }),
+        body: JSON.stringify({ 
+          responses,
+          notification_email: notificationEmail.trim() || undefined
+        }),
       })
 
       const data = await response.json()
@@ -211,6 +227,24 @@ function ConfirmAttendanceContent() {
                   />
                 )
               })}
+            </div>
+
+            {/* Notification Email Field */}
+            <div className="border-t border-gray-200 pt-6">
+              <label htmlFor="notification-email" className="block text-gray-700 font-medium mb-2">
+                Email per Notifiche (Opzionale)
+              </label>
+              <p className="text-sm text-gray-600 mb-3">
+                Inserisci un indirizzo email per ricevere notifiche su eventuali modifiche e quando verranno caricate le foto.
+              </p>
+              <input
+                id="notification-email"
+                type="email"
+                value={notificationEmail}
+                onChange={(e) => setNotificationEmail(e.target.value)}
+                placeholder="esempio@email.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold focus:border-transparent"
+              />
             </div>
 
             {error && (

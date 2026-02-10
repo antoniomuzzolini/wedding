@@ -66,6 +66,8 @@ export default function AdminPanel() {
         setAuthenticated(true)
         localStorage.setItem('adminAuthenticated', 'true')
         localStorage.setItem('adminKey', adminKey) // Store adminKey for API calls
+        // Dispatch event to update navigation
+        window.dispatchEvent(new Event('adminAuthChanged'))
         loadGuests()
       } else {
         setError(data.error || 'Chiave admin non valida')
@@ -415,9 +417,17 @@ export default function AdminPanel() {
   return (
     <div className="py-16 px-4">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-5xl font-serif text-wedding-gold mb-8 text-center">
-          Gestione Ospiti
-        </h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-5xl font-serif text-wedding-gold">
+            Gestione Ospiti
+          </h1>
+          <a
+            href="/admin/notifications"
+            className="bg-wedding-gold text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all font-serif"
+          >
+            Invio Notifiche Email
+          </a>
+        </div>
 
         {/* Statistics */}
         <div className="grid md:grid-cols-4 gap-4 mb-8">
