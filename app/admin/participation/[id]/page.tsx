@@ -15,8 +15,15 @@ export default function ParticipationPage() {
   const [familyMembers, setFamilyMembers] = useState<Guest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isPdfExport, setIsPdfExport] = useState(false)
 
   useEffect(() => {
+    // Check if this is a PDF export request
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      setIsPdfExport(urlParams.get('pdf-export') === 'true')
+    }
+
     const loadGuest = async () => {
       try {
         const idParam = params.id as string
@@ -72,10 +79,10 @@ export default function ParticipationPage() {
     : ''
 
   return (
-    <div className="min-h-screen bg-[#FAF8F3] relative overflow-hidden">
+    <div className={`${isPdfExport ? 'fixed inset-0' : 'min-h-screen'} bg-[#FAF8F3] relative overflow-hidden`}>
       {/* Background image wrapper - visible in print */}
       <div 
-        className="fixed inset-0 z-0 print:absolute"
+        className={`${isPdfExport ? 'absolute' : 'fixed'} inset-0 z-0 print:absolute`}
         style={{
           backgroundImage: "url('/images/background.jpg')",
           backgroundSize: 'cover',
@@ -83,12 +90,12 @@ export default function ParticipationPage() {
           backgroundRepeat: 'no-repeat',
           transform: 'rotate(90deg)',
           transformOrigin: 'center center',
-          width: '100vh',
-          height: '100vw',
+          width: isPdfExport ? '1239px' : '100vh',
+          height: isPdfExport ? '1754px' : '100vw',
           top: '50%',
           left: '50%',
-          marginTop: '-50vw',
-          marginLeft: '-50vh',
+          marginTop: isPdfExport ? '-877px' : '-50vw',
+          marginLeft: isPdfExport ? '-619.5px' : '-50vh',
           opacity: 0.35,
           pointerEvents: 'none',
           WebkitPrintColorAdjust: 'exact',
@@ -97,8 +104,8 @@ export default function ParticipationPage() {
         }}
       />
 
-      <div className="relative z-20 flex items-center justify-center p-8 print:p-0 min-h-[80vh] print:min-h-screen pb-24 print:pb-0">
-        <div className="max-w-2xl w-full mx-auto print:max-w-full print:w-full print:h-full print:flex print:flex-col print:items-center print:justify-center print:px-12 print:py-8">
+      <div className={`relative z-20 flex items-center justify-center ${isPdfExport ? 'p-0 h-full w-full' : 'p-8 print:p-0 min-h-[80vh] print:min-h-screen pb-24 print:pb-0'}`}>
+        <div className={`${isPdfExport ? 'w-full h-full flex flex-col items-center justify-center px-12 py-8' : 'max-w-2xl w-full mx-auto print:max-w-full print:w-full print:h-full print:flex print:flex-col print:items-center print:justify-center print:px-12 print:py-8'}`}>
           {/* Main content */}
           <div className="text-center space-y-6 print:space-y-3 print:flex-1 print:flex print:flex-col print:justify-center">
             {/* Couple names */}
@@ -172,10 +179,10 @@ export default function ParticipationPage() {
                 : PARTICIPATION_MESSAGES.QR_CODE.SINGLE}
             </p>
             {confirmationUrl && (
-              <div className="bg-white p-3 print:p-3 shadow-sm print:shadow-none print:bg-transparent">
+              <div className={`bg-white ${isPdfExport ? 'p-3' : 'p-3 print:p-3'} shadow-sm print:shadow-none print:bg-transparent`}>
                 <QRCode
                   value={confirmationUrl}
-                  size={120}
+                  size={isPdfExport ? 120 : 120}
                   level="M"
                   fgColor="#7A9C96"
                   bgColor="transparent"
