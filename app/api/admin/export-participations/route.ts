@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
         await page.evaluateHandle(() => document.fonts.ready)
         
         // Wait a bit more for any animations or transitions
-        await page.waitForTimeout(500)
+        await new Promise(resolve => setTimeout(resolve, 500))
         
         // Generate PDF for this page with exact A4 landscape dimensions
         const pdfBuffer = await page.pdf({
