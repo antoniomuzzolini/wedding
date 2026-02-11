@@ -1,7 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import puppeteer from 'puppeteer'
 import { PDFDocument } from 'pdf-lib'
 import db from '@/lib/db'
+
+// Use puppeteer-core with chromium for serverless (Vercel)
+// In development, we'll use regular puppeteer if available
+const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production'
+
+let puppeteerInstance: any
+let chromiumInstance: any
+
+if (isProduction) {
+  // Production: use puppeteer-core with chromium
+  puppeteerInstance = require('puppeteer-core')
+  chromiumInstance = require('@sparticuz/chromium')
+} else {
+  // Development: try to use full puppeteer, fallback to puppeteer-core
+  try {
+    puppeteerInstance = require('puppeteer')
+  } catch {
+    puppeteerInstance = require('puppeteer-core')
+  }
+}
 
 /**
  * Encodes a guest ID to base64url format (server-side version)
@@ -87,11 +106,22 @@ export async function GET(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
                    (host ? `${protocol}://${host}` : 'http://localhost:3000')
     
-    // Launch puppeteer
-    const browser = await puppeteer.launch({
+    // Launch puppeteer with chromium for serverless environments
+    // Use @sparticuz/chromium for Vercel/serverless, regular puppeteer for local dev
+    const launchOptions: any = {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
+    }
+    
+    if (isProduction && chromiumInstance) {
+      // Production: use chromium executable
+      launchOptions.args = chromiumInstance.args
+      launchOptions.defaultViewport = chromiumInstance.defaultViewport
+      launchOptions.executablePath = await chromiumInstance.executablePath()
+      launchOptions.headless = chromiumInstance.headless
+    }
+    
+    const browser = await puppeteerInstance.launch(launchOptions)
     
     const page = await browser.newPage()
     
