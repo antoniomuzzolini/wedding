@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PDFDocument } from 'pdf-lib'
+import * as path from 'path'
 import db from '@/lib/db'
 
 // Use puppeteer-core with chromium for serverless (Vercel)
@@ -114,10 +115,35 @@ export async function GET(request: NextRequest) {
     }
     
     if (isProduction && chromiumInstance) {
+      // Set runtime environment variable (fallback if not set in Vercel Dashboard)
+      if (!process.env.AWS_LAMBDA_JS_RUNTIME) {
+        process.env.AWS_LAMBDA_JS_RUNTIME = 'nodejs22.x'
+      }
+      
+      // Configure chromium for Vercel/serverless environment
+      if (typeof chromiumInstance.setGraphicsMode === 'function') {
+        chromiumInstance.setGraphicsMode(false) // Disable graphics mode for serverless
+      }
+      
+      // Get executable path and set library path
+      const executablePath = await chromiumInstance.executablePath()
+      const execDir = path.dirname(executablePath)
+      
+      // CRITICAL: Set LD_LIBRARY_PATH so Chromium can find libraries
+      process.env.LD_LIBRARY_PATH = execDir
+      
       // Production: use chromium executable
-      launchOptions.args = chromiumInstance.args
+      launchOptions.args = [
+        ...chromiumInstance.args,
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-web-security',
+        '--disable-features=IsolateOrigins,sitePerProcess',
+      ]
       launchOptions.defaultViewport = chromiumInstance.defaultViewport
-      launchOptions.executablePath = await chromiumInstance.executablePath()
+      launchOptions.executablePath = executablePath
       launchOptions.headless = chromiumInstance.headless
     }
     
