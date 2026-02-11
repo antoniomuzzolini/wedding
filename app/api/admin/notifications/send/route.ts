@@ -173,19 +173,69 @@ async function sendEmail(
 
   const emailContent = `${greeting}\n\n${messageBody}\n\n${closing}${siteLink}`;
 
-  // Create HTML version with clickable link
+  // Create HTML version with elegant styling matching the invitation
   const greetingHtml = greeting.replace(/\n/g, '<br>');
   const messageBodyHtml = messageBody.replace(/\n/g, '<br>');
   const closingHtml = closing.replace(/\n/g, '<br>');
+  
   const emailContentHtml = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-      <p>${greetingHtml}</p>
-      <p>${messageBodyHtml}</p>
-      <p>${closingHtml}</p>
-      <p style="margin-top: 20px;">
-        Visita il nostro sito: <a href="${siteUrl}" style="color: #7A9C96; text-decoration: underline;">${siteUrl}</a>
-      </p>
-    </div>
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Dancing+Script:wght@400;600;700&display=swap" rel="stylesheet">
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #FAF8F3; font-family: 'Cormorant Garamond', 'Georgia', serif;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #FAF8F3;">
+        <tr>
+          <td align="center" style="padding: 40px 20px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+              <!-- Header -->
+              <tr>
+                <td align="center" style="padding: 40px 40px 30px 40px; border-bottom: 2px solid #7A9C96;">
+                  <h1 style="margin: 0; font-family: 'Dancing Script', cursive; font-size: 36px; font-weight: 600; color: #7A9C96; line-height: 1.2;">
+                    Francesca e Antonio
+                  </h1>
+                </td>
+              </tr>
+              
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px;">
+                  <p style="margin: 0 0 20px 0; font-size: 18px; line-height: 1.8; color: #333333; font-weight: 400;">
+                    ${greetingHtml}
+                  </p>
+                  
+                  <div style="margin: 30px 0; padding: 20px 0; border-top: 1px solid #E8E8E8; border-bottom: 1px solid #E8E8E8;">
+                    <p style="margin: 0; font-size: 17px; line-height: 1.9; color: #444444; font-weight: 400; text-align: justify;">
+                      ${messageBodyHtml}
+                    </p>
+                  </div>
+                  
+                  <p style="margin: 30px 0 0 0; font-size: 18px; line-height: 1.8; color: #333333; font-weight: 400;">
+                    ${closingHtml}
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td align="center" style="padding: 30px 40px 40px 40px; border-top: 1px solid #E8E8E8; background-color: #FAF8F3;">
+                  <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.6; color: #666666;">
+                    Visita il nostro sito:
+                  </p>
+                  <a href="${siteUrl}" style="display: inline-block; color: #7A9C96; text-decoration: none; font-size: 16px; font-weight: 600; border-bottom: 2px solid #7A9C96; padding-bottom: 2px;">
+                    ${siteUrl}
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
   `;
 
   // Get sender name from env or use default
