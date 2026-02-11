@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
+import nodemailer from 'nodemailer';
 
 // POST /api/admin/notifications/send - Send emails to all recipients (admin only)
 export async function POST(request: NextRequest) {
@@ -110,8 +111,32 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Send email to a recipient
- * This function can be easily replaced with a real email service (Resend, SendGrid, etc.)
+ * Create nodemailer transporter for SMTP
+ */
+function createTransporter() {
+  const smtpHost = process.env.SMTP_HOST || 'ssl0.ovh.net';
+  const smtpPort = parseInt(process.env.SMTP_PORT || '465', 10);
+  const smtpSecure = process.env.SMTP_SECURE !== 'false'; // Default to true (SSL)
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPassword = process.env.SMTP_PASSWORD;
+
+  if (!smtpUser || !smtpPassword) {
+    throw new Error('SMTP credentials not configured. Please set SMTP_USER and SMTP_PASSWORD in .env.local');
+  }
+
+  return nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure, // true for 465, false for other ports
+    auth: {
+      user: smtpUser,
+      pass: smtpPassword,
+    },
+  });
+}
+
+/**
+ * Send email to a recipient via SMTP
  */
 async function sendEmail(
   recipient: {
@@ -144,21 +169,27 @@ async function sendEmail(
 
   const emailContent = `${greeting}\n\n${messageBody}\n\n${closing}`;
 
-  // TODO: Replace this with actual email service integration
-  // Example with Resend:
-  // const resend = new Resend(process.env.RESEND_API_KEY);
-  // await resend.emails.send({
-  //   from: 'noreply@yourdomain.com',
-  //   to: recipient.email,
-  //   subject: 'Aggiornamento Matrimonio',
-  //   text: emailContent,
-  // });
+  // Get sender name from env or use default
+  const senderName = process.env.SMTP_FROM_NAME || 'Francesca e Antonio';
+  const senderEmail = process.env.SMTP_USER;
 
-  // For now, log the email (in production, use a real email service)
-  console.log(`[EMAIL] To: ${recipient.email}`);
-  console.log(`[EMAIL] Subject: Aggiornamento Matrimonio`);
-  console.log(`[EMAIL] Content:\n${emailContent}\n`);
+  if (!senderEmail) {
+    throw new Error('SMTP_USER not configured');
+  }
 
-  // Simulate async email sending
-  await new Promise(resolve => setTimeout(resolve, 100));
+  try {
+    const transporter = createTransporter();
+
+    await transporter.sendMail({
+      from: `"${senderName}" <${senderEmail}>`,
+      to: recipient.email,
+      subject: 'Aggiornamento Matrimonio',
+      text: emailContent,
+    });
+
+    console.log(`[EMAIL] Sent successfully to: ${recipient.email}`);
+  } catch (error) {
+    console.error(`[EMAIL] Failed to send to ${recipient.email}:`, error);
+    throw error;
+  }
 }
