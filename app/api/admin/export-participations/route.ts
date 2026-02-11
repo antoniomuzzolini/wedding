@@ -7,19 +7,34 @@ import db from '@/lib/db'
 // In development, we'll use regular puppeteer if available
 const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production'
 
-let puppeteerInstance: any
-let chromiumInstance: any
-
-if (isProduction) {
-  // Production: use puppeteer-core with chromium-min (optimized for serverless)
-  puppeteerInstance = require('puppeteer-core')
-  chromiumInstance = require('@sparticuz/chromium-min')
-} else {
-  // Development: try to use full puppeteer, fallback to puppeteer-core
-  try {
-    puppeteerInstance = require('puppeteer')
-  } catch {
-    puppeteerInstance = require('puppeteer-core')
+// Lazy load modules to avoid bundling issues
+async function getPuppeteerModules(): Promise<{
+  puppeteer: any
+  chromium: any | null
+}> {
+  if (isProduction) {
+    // Production: use puppeteer-core with chromium (optimized for serverless)
+    const puppeteerCore = await import('puppeteer-core')
+    const chromium = await import('@sparticuz/chromium')
+    return {
+      puppeteer: puppeteerCore.default || puppeteerCore,
+      chromium: chromium.default || chromium,
+    }
+  } else {
+    // Development: try to use full puppeteer, fallback to puppeteer-core
+    try {
+      const puppeteer = await import('puppeteer')
+      return {
+        puppeteer: puppeteer.default || puppeteer,
+        chromium: null,
+      }
+    } catch {
+      const puppeteerCore = await import('puppeteer-core')
+      return {
+        puppeteer: puppeteerCore.default || puppeteerCore,
+        chromium: null,
+      }
+    }
   }
 }
 
@@ -80,6 +95,11 @@ function groupGuestsByFamily(guests: any[]): Map<number, any[]> {
   return grouped
 }
 
+// Configure runtime for Vercel serverless
+export const runtime = 'nodejs'
+export const maxDuration = 300 // 5 minutes (requires Vercel Pro plan)
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -107,6 +127,9 @@ export async function GET(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
                    (host ? `${protocol}://${host}` : 'http://localhost:3000')
     
+    // Get puppeteer modules dynamically
+    const { puppeteer: puppeteerInstance, chromium: chromiumInstance } = await getPuppeteerModules()
+    
     // Launch puppeteer with chromium for serverless environments
     // Use @sparticuz/chromium for Vercel/serverless, regular puppeteer for local dev
     const launchOptions: any = {
@@ -121,7 +144,7 @@ export async function GET(request: NextRequest) {
       }
       
       // Configure chromium for Vercel/serverless environment
-      if (typeof chromiumInstance.setGraphicsMode === 'function') {
+      if (chromiumInstance && typeof chromiumInstance.setGraphicsMode === 'function') {
         chromiumInstance.setGraphicsMode(false) // Disable graphics mode for serverless
       }
       
