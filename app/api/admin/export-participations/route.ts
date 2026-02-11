@@ -11,9 +11,9 @@ let puppeteerInstance: any
 let chromiumInstance: any
 
 if (isProduction) {
-  // Production: use puppeteer-core with chromium
+  // Production: use puppeteer-core with chromium-min (optimized for serverless)
   puppeteerInstance = require('puppeteer-core')
-  chromiumInstance = require('@sparticuz/chromium')
+  chromiumInstance = require('@sparticuz/chromium-min')
 } else {
   // Development: try to use full puppeteer, fallback to puppeteer-core
   try {
@@ -125,12 +125,16 @@ export async function GET(request: NextRequest) {
         chromiumInstance.setGraphicsMode(false) // Disable graphics mode for serverless
       }
       
-      // Get executable path and set library path
+      // Get executable path
       const executablePath = await chromiumInstance.executablePath()
       const execDir = path.dirname(executablePath)
       
       // CRITICAL: Set LD_LIBRARY_PATH so Chromium can find libraries
-      process.env.LD_LIBRARY_PATH = execDir
+      // Include both the executable directory and /tmp where libraries are extracted
+      const existingLibPath = process.env.LD_LIBRARY_PATH || ''
+      process.env.LD_LIBRARY_PATH = [execDir, '/tmp', existingLibPath]
+        .filter(Boolean)
+        .join(':')
       
       // Production: use chromium executable
       launchOptions.args = [
@@ -145,6 +149,12 @@ export async function GET(request: NextRequest) {
       launchOptions.defaultViewport = chromiumInstance.defaultViewport
       launchOptions.executablePath = executablePath
       launchOptions.headless = chromiumInstance.headless
+      
+      // Pass LD_LIBRARY_PATH in env options
+      launchOptions.env = {
+        ...process.env,
+        LD_LIBRARY_PATH: process.env.LD_LIBRARY_PATH,
+      }
     }
     
     const browser = await puppeteerInstance.launch(launchOptions)

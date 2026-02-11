@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   serverExternalPackages: [
     'puppeteer-core',
-    '@sparticuz/chromium',
+    '@sparticuz/chromium-min',
   ],
 }
 
