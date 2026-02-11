@@ -103,7 +103,7 @@ export default function ParticipationPage() {
           <div className="text-center space-y-6 print:space-y-3 print:flex-1 print:flex print:flex-col print:justify-center">
             {/* Couple names */}
             <div className="space-y-1 print:space-y-0">
-              <h1 className="text-6xl print:text-6xl font-script text-wedding-gold leading-tight">
+              <h1 className="text-6xl print:text-6xl font-script text-wedding-sage-dark leading-tight">
                 {WEDDING_CONSTANTS.COUPLE_NAMES}
               </h1>
             </div>
@@ -114,7 +114,7 @@ export default function ParticipationPage() {
                 annunciano con gioia il loro matrimonio
               </p>
               
-              <p className="text-4xl print:text-5xl font-script text-wedding-gold">
+              <p className="text-4xl print:text-5xl font-script text-wedding-sage-dark">
                 {WEDDING_CONSTANTS.WEDDING_DATE}
               </p>
             </div>
@@ -189,7 +189,7 @@ export default function ParticipationPage() {
         <div className="mt-12 print:hidden text-center absolute bottom-8 left-1/2 transform -translate-x-1/2">
           <button
             onClick={() => window.print()}
-            className="bg-wedding-gold text-white px-8 py-3 rounded-lg hover:bg-opacity-90 transition-all font-serif"
+            className="bg-wedding-sage-dark text-white px-8 py-3 rounded-lg hover:bg-opacity-90 transition-all font-serif"
           >
             Stampa
           </button>

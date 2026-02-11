@@ -33,7 +33,7 @@ export default function GiftList() {
   return (
     <div className="py-16 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-5xl md:text-6xl font-serif text-wedding-gold text-center mb-12">
+        <h1 className="text-5xl md:text-6xl font-serif text-wedding-sage-dark text-center mb-12">
           Lista Nozze
         </h1>
 
@@ -51,7 +51,7 @@ export default function GiftList() {
 
           {/* Testo */}
           <p className="text-lg md:text-xl text-gray-700 leading-relaxed text-center mb-12">
-            Non ne abbiamo una! Il regalo più grande è la vostra presenza, ma se volete contribuire al nostro viaggio di nozze in Giappone ci farebbe sicuramente piacere
+            Non ne abbiamo una! Il regalo più grande è la vostra presenza, ma se volete contribuire al nostro viaggio di nozze in Giappone ci farebbe sicuramente piacere!
           </p>
 
           {/* Intestatario e IBAN centrati */}
@@ -60,13 +60,13 @@ export default function GiftList() {
             <div className="flex flex-col items-center">
               <button
                 onClick={handleCopyHolder}
-                className="text-lg md:text-xl font-serif text-wedding-gold text-center cursor-pointer hover:opacity-80 transition-opacity select-none touch-manipulation"
+                className="text-lg md:text-xl font-serif text-wedding-sage-dark text-center cursor-pointer hover:opacity-80 transition-opacity select-none touch-manipulation"
                 aria-label="Clicca per copiare l'intestatario"
               >
                 {accountHolder}
               </button>
               {holderCopied && (
-                <p className="text-sm text-wedding-gold mt-2 animate-fade-in">
+                <p className="text-sm text-wedding-sage-dark mt-2 animate-fade-in">
                   Intestatario copiato!
                 </p>
               )}
@@ -76,13 +76,13 @@ export default function GiftList() {
             <div className="flex flex-col items-center">
               <button
                 onClick={handleCopyIban}
-                className="text-xl md:text-2xl font-serif text-wedding-gold text-center break-all cursor-pointer hover:opacity-80 transition-opacity select-none touch-manipulation"
+                className="text-xl md:text-2xl font-serif text-wedding-sage-dark text-center break-all cursor-pointer hover:opacity-80 transition-opacity select-none touch-manipulation"
                 aria-label="Clicca per copiare l'IBAN"
               >
                 {iban}
               </button>
               {ibanCopied && (
-                <p className="text-sm text-wedding-gold mt-2 animate-fade-in">
+                <p className="text-sm text-wedding-sage-dark mt-2 animate-fade-in">
                   IBAN copiato!
                 </p>
               )}

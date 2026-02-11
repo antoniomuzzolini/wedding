@@ -145,7 +145,7 @@ function ConfirmAttendanceContent() {
   return (
     <div className="py-16 px-4">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-5xl md:text-6xl font-serif text-wedding-gold text-center mb-12">
+        <h1 className="text-5xl md:text-6xl font-serif text-wedding-sage-dark text-center mb-12">
           Conferma la Tua Presenza
         </h1>
 
@@ -165,7 +165,7 @@ function ConfirmAttendanceContent() {
                   onChange={(e) => setName(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && lookupGuest()}
                   placeholder="Inserisci il tuo nome"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark focus:border-transparent"
                 />
               </div>
               <div>
@@ -179,7 +179,7 @@ function ConfirmAttendanceContent() {
                   onChange={(e) => setSurname(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && lookupGuest()}
                   placeholder="Inserisci il tuo cognome"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark focus:border-transparent"
                 />
               </div>
             </div>
@@ -189,7 +189,7 @@ function ConfirmAttendanceContent() {
             <button
               onClick={lookupGuest}
               disabled={loading}
-              className="w-full bg-wedding-gold text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-wedding-sage-dark text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Ricerca in corso...' : 'Trova il Mio Invito'}
             </button>
@@ -243,7 +243,7 @@ function ConfirmAttendanceContent() {
                 value={notificationEmail}
                 onChange={(e) => setNotificationEmail(e.target.value)}
                 placeholder="esempio@email.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark focus:border-transparent"
               />
             </div>
 
@@ -254,7 +254,7 @@ function ConfirmAttendanceContent() {
             <button
               onClick={submitResponse}
               disabled={loading}
-              className="w-full bg-wedding-gold text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
+              className="w-full bg-wedding-sage-dark text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
             >
               {loading ? 'Invio in corso...' : 'Invia Risposte'}
             </button>

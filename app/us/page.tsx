@@ -95,7 +95,7 @@ export default function Us() {
   return (
     <div className="py-16 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-5xl md:text-6xl font-serif text-wedding-gold text-center mb-12">
+        <h1 className="text-5xl md:text-6xl font-serif text-wedding-sage-dark text-center mb-12">
           La Nostra Storia
         </h1>
         
@@ -111,10 +111,10 @@ export default function Us() {
                 unoptimized
               />
             </div>
-            <h2 className="text-3xl font-serif text-wedding-gold mb-4 text-center">Francesca Poles</h2>
-            <p className="text-gray-700 leading-relaxed">
+            <h2 className="text-3xl font-serif text-wedding-sage-dark mb-4 text-center">Francesca Poles</h2>
+            {/* <p className="text-gray-700 leading-relaxed">
               [Aggiungi la tua storia personale, background, interessi, ecc.]
-            </p>
+            </p> */}
           </div>
           
           <div className="bg-white/60 p-8 rounded-lg shadow-lg">
@@ -128,25 +128,29 @@ export default function Us() {
                 unoptimized
               />
             </div>
-            <h2 className="text-3xl font-serif text-wedding-gold mb-4 text-center">Antonio Muzzolini</h2>
-            <p className="text-gray-700 leading-relaxed">
-              [Aggiungi la tua storia personale, background, interessi, ecc.]
-            </p>
+            <h2 className="text-3xl font-serif text-wedding-sage-dark mb-4 text-center">Antonio Muzzolini</h2>
+            {/* <p className="text-gray-700 leading-relaxed">
+              Dalle colline, i boschi e i vigneti di Loneriacco
+            </p> */}
           </div>
         </div>
 
         <div className="bg-white/60 p-8 rounded-lg shadow-lg">
-          <h2 className="text-3xl font-serif text-wedding-gold mb-6 text-center">
+          <h2 className="text-3xl font-serif text-wedding-sage-dark mb-6 text-center">
             Come Ci Siamo Incontrati
           </h2>
           <p className="text-gray-700 leading-relaxed text-lg text-center">
-            [Condividi la vostra storia d'amore - come vi siete conosciuti, il vostro primo appuntamento, la proposta, ecc.]
+            Nel 2018, una sera d'estate Francesca e Antonio si sono conosciuti, ed è stato un immediato colpo di fulmine.
+            <br/>Dopo una semplice serata a parlare e parlare, sono successe mille cose.
+            <br/>Diversi sport, bellissimi viaggi, cambi di università, di lavori, di casa.
+            <br/>Fino al 2026, a Sauris, in cui in una sera di un nevoso weekend di gennaio Antonio ha proposto a Francesca di sposarla.
+            <br/>E, a quanto pare, Francesca ha accettato.
           </p>
         </div>
 
         {/* Photo Gallery/Album Section */}
         <div className="mt-16">
-          <h2 className="text-4xl font-serif text-wedding-gold mb-12 text-center">
+          <h2 className="text-4xl font-serif text-wedding-sage-dark mb-12 text-center">
             I Nostri Ricordi
           </h2>
           
@@ -158,7 +162,7 @@ export default function Us() {
             <div className="space-y-16">
               {Object.entries(gallerySections).map(([sectionName, images]) => (
                 <div key={sectionName} className="mb-12">
-                  <h3 className="text-3xl font-serif text-wedding-gold mb-6 text-center capitalize">
+                  <h3 className="text-3xl font-serif text-wedding-sage-dark mb-6 text-center capitalize">
                     {formatSectionName(sectionName)}
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -203,7 +207,7 @@ export default function Us() {
               e.stopPropagation()
               closeImage()
             }}
-            className="absolute top-20 right-4 text-white hover:text-wedding-gold transition-colors z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-2 touch-manipulation shadow-lg"
+            className="absolute top-20 right-4 text-white hover:text-wedding-sage-dark transition-colors z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-2 touch-manipulation shadow-lg"
             aria-label="Chiudi"
           >
             <svg
@@ -227,7 +231,7 @@ export default function Us() {
               e.stopPropagation()
               navigateImage('prev')
             }}
-            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-white hover:text-wedding-gold transition-colors z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-2 touch-manipulation shadow-lg"
+            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-white hover:text-wedding-sage-dark transition-colors z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-2 touch-manipulation shadow-lg"
             aria-label="Foto precedente"
           >
             <svg
@@ -250,7 +254,7 @@ export default function Us() {
               e.stopPropagation()
               navigateImage('next')
             }}
-            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-white hover:text-wedding-gold transition-colors z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-2 touch-manipulation shadow-lg"
+            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-white hover:text-wedding-sage-dark transition-colors z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-2 touch-manipulation shadow-lg"
             aria-label="Foto successiva"
           >
             <svg

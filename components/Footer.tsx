@@ -14,7 +14,7 @@ export default function Footer() {
       </div>
       
       {/* Footer Text */}
-      <div className="bg-wedding-gold/10 py-8 text-center">
+      <div className="bg-wedding-sage-dark/10 py-8 text-center">
         <p className="text-gray-700 font-serif">
           Fatto con ❤️ per il nostro giorno speciale
         </p>

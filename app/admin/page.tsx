@@ -272,6 +272,66 @@ export default function AdminPanel() {
     return type === 'full' ? 'Cerimonia Completa' : 'Solo Serata'
   }
 
+  const getInvitationTypeShort = (type: InvitationType) => {
+    return type === 'full' ? 'CC' : 'SS'
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'Confermato'
+      case 'declined':
+        return 'Rifiutato'
+      default:
+        return 'In Attesa'
+    }
+  }
+
+  const getStatusShort = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'OK'
+      case 'declined':
+        return 'NO'
+      default:
+        return 'Attesa'
+    }
+  }
+
+  const getMenuTypeShort = (menuType: MenuType) => {
+    switch (menuType) {
+      case 'adulto':
+        return 'A'
+      case 'bambino':
+        return 'B'
+      case 'neonato':
+        return 'N'
+      default:
+        return '-'
+    }
+  }
+
+  const getGroupStatusShort = (groupGuests: Guest[]): { status: string; label: string; color: string } => {
+    const confirmed = groupGuests.filter(g => g.response_status === 'confirmed').length
+    const declined = groupGuests.filter(g => g.response_status === 'declined').length
+    const pending = groupGuests.filter(g => g.response_status === 'pending').length
+    const total = groupGuests.length
+
+    if (pending > 0) {
+      return { status: 'pending', label: 'Attesa', color: 'bg-gray-100 text-gray-800' }
+    }
+    if (confirmed === total) {
+      return { status: 'confirmed', label: 'OK', color: 'bg-green-100 text-green-800' }
+    }
+    if (declined === total) {
+      return { status: 'declined', label: 'NO', color: 'bg-red-100 text-red-800' }
+    }
+    if (confirmed > 0 && declined > 0) {
+      return { status: 'partial', label: 'Parz.', color: 'bg-yellow-100 text-yellow-800' }
+    }
+    return { status: 'pending', label: 'Attesa', color: 'bg-gray-100 text-gray-800' }
+  }
+
   // Group guests by family_id - include the main guest (the one with id === family_id)
   // Single guests are also treated as groups with just one member
   const groupedGuests = guests.reduce((acc, guest) => {
@@ -336,7 +396,7 @@ export default function AdminPanel() {
     return (
       <div className="py-16 px-4 flex items-center justify-center">
         <div className="max-w-md mx-auto bg-white/80 p-8 rounded-lg shadow-lg">
-          <h1 className="text-3xl font-serif text-wedding-gold mb-6 text-center">
+          <h1 className="text-3xl font-serif text-wedding-sage-dark mb-6 text-center">
             Accesso Admin
           </h1>
           <div className="mb-4">
@@ -346,13 +406,13 @@ export default function AdminPanel() {
               value={adminKey}
               onChange={(e) => setAdminKey(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && authenticate()}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark"
             />
           </div>
           {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded">{error}</div>}
           <button
             onClick={authenticate}
-            className="w-full bg-wedding-gold text-white px-6 py-3 rounded-lg hover:bg-opacity-90"
+            className="w-full bg-wedding-sage-dark text-white px-6 py-3 rounded-lg hover:bg-opacity-90"
           >
             Accedi
           </button>
@@ -417,16 +477,10 @@ export default function AdminPanel() {
   return (
     <div className="py-16 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-5xl font-serif text-wedding-gold">
+        <div className="mb-8">
+          <h1 className="text-5xl font-serif text-wedding-sage-dark">
             Gestione Ospiti
           </h1>
-          <a
-            href="/admin/notifications"
-            className="bg-wedding-gold text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all font-serif"
-          >
-            Invio Notifiche Email
-          </a>
         </div>
 
         {/* Statistics */}
@@ -453,7 +507,7 @@ export default function AdminPanel() {
         <div className="grid md:grid-cols-2 gap-4 mb-8">
           {/* Full Ceremony Counts */}
           <div className="bg-white/80 p-6 rounded-lg shadow-lg">
-            <h3 className="text-xl font-serif text-wedding-gold mb-4 text-center">
+            <h3 className="text-xl font-serif text-wedding-sage-dark mb-4 text-center">
               Intera Cerimonia
             </h3>
             
@@ -535,7 +589,7 @@ export default function AdminPanel() {
 
           {/* Evening Only Counts */}
           <div className="bg-white/80 p-6 rounded-lg shadow-lg">
-            <h3 className="text-xl font-serif text-wedding-gold mb-4 text-center">
+            <h3 className="text-xl font-serif text-wedding-sage-dark mb-4 text-center">
               Solo Serata
             </h3>
             <div className="grid grid-cols-4 gap-4">
@@ -562,7 +616,7 @@ export default function AdminPanel() {
         {/* Dietary Requirements Recap */}
         {dietaryRequirements.length > 0 && (
           <div className="bg-white/80 p-6 rounded-lg shadow-lg mb-8">
-            <h2 className="text-2xl font-serif text-wedding-gold mb-4">
+            <h2 className="text-2xl font-serif text-wedding-sage-dark mb-4">
               Recap Richieste Alimentari e Intolleranze
             </h2>
             <div className="space-y-4">
@@ -605,7 +659,7 @@ export default function AdminPanel() {
 
         {/* Add Guest Form */}
         <div className="bg-white/80 p-6 rounded-lg shadow-lg mb-8">
-          <h2 className="text-2xl font-serif text-wedding-gold mb-4">Aggiungi Nuovo Ospite</h2>
+          <h2 className="text-2xl font-serif text-wedding-sage-dark mb-4">Aggiungi Nuovo Ospite</h2>
           <div className="space-y-4">
             <div className="grid md:grid-cols-5 gap-4">
               <input
@@ -613,21 +667,21 @@ export default function AdminPanel() {
                 placeholder="Nome *"
                 value={newGuest.name}
                 onChange={(e) => setNewGuest({ ...newGuest, name: e.target.value })}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark"
               />
               <input
                 type="text"
                 placeholder="Cognome *"
                 value={newGuest.surname}
                 onChange={(e) => setNewGuest({ ...newGuest, surname: e.target.value })}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark"
               />
               <select
                 value={newGuest.invitation_type}
                 onChange={(e) =>
                   setNewGuest({ ...newGuest, invitation_type: e.target.value as InvitationType })
                 }
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark"
               >
                 <option value="full">Cerimonia Completa</option>
                 <option value="evening">Solo Serata</option>
@@ -637,7 +691,7 @@ export default function AdminPanel() {
                 onChange={(e) =>
                   setNewGuest({ ...newGuest, menu_type: e.target.value as MenuType })
                 }
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark"
               >
                 <option value="adulto">Menù Adulto</option>
                 <option value="bambino">Menù Bambino</option>
@@ -646,7 +700,7 @@ export default function AdminPanel() {
               <button
                 onClick={addGuest}
                 disabled={!canAddGuest}
-                className="bg-wedding-gold text-white px-6 py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-wedding-sage-dark text-white px-6 py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Aggiungi Ospite
               </button>
@@ -657,7 +711,7 @@ export default function AdminPanel() {
                 onChange={(e) =>
                   setNewGuest({ ...newGuest, linkToGuest: e.target.value ? parseInt(e.target.value) : null })
                 }
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark"
               >
                 <option value="">Collega a un ospite esistente (opzionale)</option>
                 {guests.map((guest) => (
@@ -681,7 +735,7 @@ export default function AdminPanel() {
 
         {/* Guests List */}
         <div className="bg-white/80 p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-serif text-wedding-gold mb-4">Lista Ospiti</h2>
+          <h2 className="text-2xl font-serif text-wedding-sage-dark mb-4">Lista Ospiti</h2>
           {loading ? (
             <div className="text-center py-8">Caricamento...</div>
           ) : guests.length === 0 ? (
@@ -751,16 +805,18 @@ export default function AdminPanel() {
                         </div>
                         <div className="flex items-center gap-4">
                           <span className={`px-2 py-1 rounded text-xs ${groupStatus.color}`}>
-                            {groupStatus.label}
+                            <span className="md:hidden">{getGroupStatusShort(groupGuests).label}</span>
+                            <span className="hidden md:inline">{groupStatus.label}</span>
                           </span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               window.open(`/admin/participation/${guestIdEncoded}`, '_blank')
                             }}
-                            className="px-3 py-1 bg-wedding-gold text-white rounded text-xs hover:bg-opacity-90 transition-all"
+                            className="px-3 py-1 bg-wedding-sage-dark text-white rounded text-xs hover:bg-opacity-90 transition-all"
                           >
-                            Partecipazione
+                            <span className="md:hidden">Part.</span>
+                            <span className="hidden md:inline">Partecipazione</span>
                           </button>
                         </div>
                       </div>
@@ -773,62 +829,71 @@ export default function AdminPanel() {
                           <table className="w-full">
                             <thead>
                               <tr className="border-b bg-gray-50">
-                                <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Nome</th>
-                                <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Cognome</th>
-                                <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Invito</th>
-                                <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Menù</th>
-                                <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Collegamento</th>
-                                <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Stato</th>
-                                <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Data Risposta</th>
-                                <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Azioni</th>
+                                <th className="text-left py-2 px-2 md:px-4 text-xs md:text-sm font-medium text-gray-700">Nome</th>
+                                <th className="text-left py-2 px-2 md:px-4 text-xs md:text-sm font-medium text-gray-700">Cognome</th>
+                                <th className="text-left py-2 px-2 md:px-4 text-xs md:text-sm font-medium text-gray-700">
+                                  <span className="md:hidden">Inv.</span>
+                                  <span className="hidden md:inline">Invito</span>
+                                </th>
+                                <th className="text-left py-2 px-2 md:px-4 text-xs md:text-sm font-medium text-gray-700">Menù</th>
+                                <th className="text-left py-2 px-2 md:px-4 text-xs md:text-sm font-medium text-gray-700">
+                                  <span className="md:hidden">Coll.</span>
+                                  <span className="hidden md:inline">Collegamento</span>
+                                </th>
+                                <th className="text-left py-2 px-2 md:px-4 text-xs md:text-sm font-medium text-gray-700">Stato</th>
+                                <th className="text-left py-2 px-2 md:px-4 text-xs md:text-sm font-medium text-gray-700">
+                                  <span className="md:hidden">Data</span>
+                                  <span className="hidden md:inline">Data Risposta</span>
+                                </th>
+                                <th className="text-left py-2 px-2 md:px-4 text-xs md:text-sm font-medium text-gray-700">Azioni</th>
                               </tr>
                             </thead>
                             <tbody>
                               {groupGuests.map((guest) => (
                                 editingGuest === guest.id ? (
                                   <tr key={guest.id} className="border-b bg-yellow-50">
-                                    <td className="py-3 px-4">
+                                    <td className="py-2 md:py-3 px-2 md:px-4">
                                       <input
                                         type="text"
                                         value={editForm.name}
                                         onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs md:text-sm"
                                       />
                                     </td>
-                                    <td className="py-3 px-4">
+                                    <td className="py-2 md:py-3 px-2 md:px-4">
                                       <input
                                         type="text"
                                         value={editForm.surname}
                                         onChange={(e) => setEditForm({ ...editForm, surname: e.target.value })}
-                                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs md:text-sm"
                                       />
                                     </td>
-                                    <td className="py-3 px-4">
+                                    <td className="py-2 md:py-3 px-2 md:px-4">
                                       <select
                                         value={editForm.invitation_type}
                                         onChange={(e) => setEditForm({ ...editForm, invitation_type: e.target.value as InvitationType })}
-                                        className="px-2 py-1 border border-gray-300 rounded text-sm"
+                                        className="px-2 py-1 border border-gray-300 rounded text-xs md:text-sm w-full"
                                       >
                                         <option value="full">Cerimonia Completa</option>
                                         <option value="evening">Solo Serata</option>
                                       </select>
                                     </td>
-                                    <td className="py-3 px-4">
+                                    <td className="py-2 md:py-3 px-2 md:px-4">
                                       <select
                                         value={editForm.menu_type}
                                         onChange={(e) => setEditForm({ ...editForm, menu_type: e.target.value as MenuType })}
-                                        className="px-2 py-1 border border-gray-300 rounded text-sm"
+                                        className="px-2 py-1 border border-gray-300 rounded text-xs md:text-sm w-full"
                                       >
                                         <option value="adulto">Adulto</option>
                                         <option value="bambino">Bambino</option>
                                         <option value="neonato">Neonato</option>
                                       </select>
                                     </td>
-                                    <td className="py-3 px-4">
+                                    <td className="py-2 md:py-3 px-2 md:px-4">
                                       <select
                                         value={editForm.family_id || ''}
                                         onChange={(e) => setEditForm({ ...editForm, family_id: e.target.value ? parseInt(e.target.value) : null })}
-                                        className="px-2 py-1 border border-gray-300 rounded text-sm w-full"
+                                        className="px-2 py-1 border border-gray-300 rounded text-xs md:text-sm w-full"
                                       >
                                         <option value="">Nessun collegamento</option>
                                         {guests.filter(g => g.id !== guest.id).map((g) => (
@@ -838,90 +903,102 @@ export default function AdminPanel() {
                                         ))}
                                       </select>
                                     </td>
-                                    <td className="py-3 px-4">
+                                    <td className="py-2 md:py-3 px-2 md:px-4">
                                       <select
                                         value={editForm.response_status}
                                         onChange={(e) => setEditForm({ ...editForm, response_status: e.target.value as 'pending' | 'confirmed' | 'declined' })}
-                                        className="px-2 py-1 border border-gray-300 rounded text-sm"
+                                        className="px-2 py-1 border border-gray-300 rounded text-xs md:text-sm w-full"
                                       >
                                         <option value="pending">In Attesa</option>
                                         <option value="confirmed">Confermato</option>
                                         <option value="declined">Rifiutato</option>
                                       </select>
                                     </td>
-                                    <td className="py-3 px-4 text-sm">
+                                    <td className="py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm">
                                       {guest.response_date
-                                        ? new Date(guest.response_date).toLocaleDateString('it-IT')
+                                        ? new Date(guest.response_date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })
                                         : '-'}
                                     </td>
-                                    <td className="py-3 px-4">
-                                      <div className="flex gap-2">
+                                    <td className="py-2 md:py-3 px-2 md:px-4">
+                                      <div className="flex gap-1 md:gap-2">
                                         <button
                                           onClick={() => updateGuest(guest.id)}
                                           disabled={loading}
-                                          className="text-green-600 hover:text-green-800 text-sm disabled:opacity-50"
+                                          className="text-green-600 hover:text-green-800 text-xs md:text-sm disabled:opacity-50"
                                         >
-                                          Salva
+                                          <span className="md:hidden">✓</span>
+                                          <span className="hidden md:inline">Salva</span>
                                         </button>
                                         <button
                                           onClick={cancelEdit}
-                                          className="text-gray-600 hover:text-gray-800 text-sm"
+                                          className="text-gray-600 hover:text-gray-800 text-xs md:text-sm"
                                         >
-                                          Annulla
+                                          <span className="md:hidden">✗</span>
+                                          <span className="hidden md:inline">Annulla</span>
                                         </button>
                                       </div>
                                     </td>
                                   </tr>
                                 ) : (
                                   <tr key={guest.id} className="border-b hover:bg-gray-50">
-                                    <td className="py-3 px-4">{guest.name}</td>
-                                    <td className="py-3 px-4">{guest.surname || '-'}</td>
-                                    <td className="py-3 px-4">
-                                      {getInvitationTypeLabel(guest.invitation_type)}
+                                    <td className="py-2 md:py-3 px-2 md:px-4 text-xs md:text-base">{guest.name}</td>
+                                    <td className="py-2 md:py-3 px-2 md:px-4 text-xs md:text-base">{guest.surname || '-'}</td>
+                                    <td className="py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm">
+                                      <span className="md:hidden">{getInvitationTypeShort(guest.invitation_type)}</span>
+                                      <span className="hidden md:inline">{getInvitationTypeLabel(guest.invitation_type)}</span>
                                     </td>
-                                    <td className="py-3 px-4 text-sm">
-                                      {guest.menu_type === 'adulto' ? 'Adulto' :
-                                       guest.menu_type === 'bambino' ? 'Bambino' :
-                                       guest.menu_type === 'neonato' ? 'Neonato' : '-'}
+                                    <td className="py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm">
+                                      <span className="md:hidden">{getMenuTypeShort(guest.menu_type || 'adulto')}</span>
+                                      <span className="hidden md:inline">
+                                        {guest.menu_type === 'adulto' ? 'Adulto' :
+                                         guest.menu_type === 'bambino' ? 'Bambino' :
+                                         guest.menu_type === 'neonato' ? 'Neonato' : '-'}
+                                      </span>
                                     </td>
-                                    <td className="py-3 px-4 text-sm">
+                                    <td className="py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm">
                                       {guest.family_id ? (
                                         <span className="text-gray-600">
-                                          {guests.find(g => g.id === guest.family_id)?.name} {guests.find(g => g.id === guest.family_id)?.surname || ''}
+                                          <span className="md:hidden">
+                                            {guests.find(g => g.id === guest.family_id)?.name?.charAt(0)}.{guests.find(g => g.id === guest.family_id)?.surname?.charAt(0) || ''}
+                                          </span>
+                                          <span className="hidden md:inline">
+                                            {guests.find(g => g.id === guest.family_id)?.name} {guests.find(g => g.id === guest.family_id)?.surname || ''}
+                                          </span>
                                         </span>
                                       ) : (
                                         <span className="text-gray-400">-</span>
                                       )}
                                     </td>
-                                    <td className="py-3 px-4">
+                                    <td className="py-2 md:py-3 px-2 md:px-4">
                                       <span
-                                        className={`px-2 py-1 rounded text-sm ${getStatusColor(
+                                        className={`px-1.5 md:px-2 py-0.5 md:py-1 rounded text-xs md:text-sm ${getStatusColor(
                                           guest.response_status
                                         )}`}
                                       >
-                                        {guest.response_status === 'confirmed' ? 'Confermato' : 
-                                         guest.response_status === 'declined' ? 'Rifiutato' : 
-                                         'In Attesa'}
+                                        <span className="md:hidden">{getStatusShort(guest.response_status)}</span>
+                                        <span className="hidden md:inline">{getStatusLabel(guest.response_status)}</span>
                                       </span>
                                     </td>
-                                    <td className="py-3 px-4 text-sm">
+                                    <td className="py-2 md:py-3 px-2 md:px-4 text-xs md:text-sm">
                                       {guest.response_date
-                                        ? new Date(guest.response_date).toLocaleDateString('it-IT')
+                                        ? new Date(guest.response_date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })
                                         : '-'}
                                     </td>
-                                    <td className="py-3 px-4">
-                                      <div className="flex gap-2">
+                                    <td className="py-2 md:py-3 px-2 md:px-4">
+                                      <div className="flex gap-1 md:gap-2">
                                         <button
                                           onClick={() => startEdit(guest)}
-                                          className="text-blue-600 hover:text-blue-800 text-sm"
+                                          className="text-blue-600 hover:text-blue-800 text-xs md:text-sm"
                                         >
-                                          Modifica
+                                          <span className="md:hidden">Mod.</span>
+                                          <span className="hidden md:inline">Modifica</span>
                                         </button>
                                         <button
                                           onClick={() => deleteGuest(guest.id)}
-                                          className="text-red-600 hover:text-red-800 text-sm"
+                                          className="text-red-600 hover:text-red-800 text-xs md:text-sm"
                                         >
-                                          Elimina
+                                          <span className="md:hidden">Del.</span>
+                                          <span className="hidden md:inline">Elimina</span>
                                         </button>
                                       </div>
                                     </td>

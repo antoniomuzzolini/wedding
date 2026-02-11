@@ -118,12 +118,12 @@ export default function Navigation() {
       <div className="md:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <h2 className="text-xl font-serif text-wedding-gold">
+            <h2 className="text-xl font-serif text-wedding-sage-dark">
               Francesca & Antonio
             </h2>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-gray-700 hover:text-wedding-gold transition-colors"
+              className="p-2 text-gray-700 hover:text-wedding-sage-dark transition-colors"
               aria-label="Menu"
             >
               <svg
@@ -154,7 +154,7 @@ export default function Navigation() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center h-12">
-            <h2 className="text-2xl font-serif text-wedding-gold">
+            <h2 className="text-2xl font-serif text-wedding-sage-dark">
               Francesca & Antonio
             </h2>
           </div>
@@ -173,8 +173,8 @@ export default function Navigation() {
                   href={item.href}
                   className={`px-3 py-2 text-sm font-medium transition-colors uppercase ${
                     isActive
-                      ? 'text-wedding-gold border-b-2 border-wedding-gold'
-                      : 'text-gray-700 hover:text-wedding-gold'
+                      ? 'text-wedding-sage-dark border-b-2 border-wedding-sage-dark'
+                      : 'text-gray-700 hover:text-wedding-sage-dark'
                   }`}
                 >
                   {item.label}
@@ -198,8 +198,8 @@ export default function Navigation() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`block px-4 py-3 text-base font-medium transition-colors uppercase rounded-lg ${
                     isActive
-                      ? 'text-wedding-gold bg-wedding-gold/10'
-                      : 'text-gray-700 hover:text-wedding-gold hover:bg-gray-50'
+                      ? 'text-wedding-sage-dark bg-wedding-sage-dark/10'
+                      : 'text-gray-700 hover:text-wedding-sage-dark hover:bg-gray-50'
                   }`}
                 >
                   {item.label}

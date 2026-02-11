@@ -167,7 +167,26 @@ async function sendEmail(
 
   const closing = `Un abbraccio,\nFrancesca e Antonio`;
 
-  const emailContent = `${greeting}\n\n${messageBody}\n\n${closing}`;
+  // Get site URL from env or use default
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.com';
+  const siteLink = `\n\nVisita il nostro sito: ${siteUrl}`;
+
+  const emailContent = `${greeting}\n\n${messageBody}\n\n${closing}${siteLink}`;
+
+  // Create HTML version with clickable link
+  const greetingHtml = greeting.replace(/\n/g, '<br>');
+  const messageBodyHtml = messageBody.replace(/\n/g, '<br>');
+  const closingHtml = closing.replace(/\n/g, '<br>');
+  const emailContentHtml = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+      <p>${greetingHtml}</p>
+      <p>${messageBodyHtml}</p>
+      <p>${closingHtml}</p>
+      <p style="margin-top: 20px;">
+        Visita il nostro sito: <a href="${siteUrl}" style="color: #7A9C96; text-decoration: underline;">${siteUrl}</a>
+      </p>
+    </div>
+  `;
 
   // Get sender name from env or use default
   const senderName = process.env.SMTP_FROM_NAME || 'Francesca e Antonio';
@@ -185,6 +204,7 @@ async function sendEmail(
       to: recipient.email,
       subject: 'Aggiornamento Matrimonio',
       text: emailContent,
+      html: emailContentHtml,
     });
 
     console.log(`[EMAIL] Sent successfully to: ${recipient.email}`);

@@ -115,7 +115,11 @@ export default function NotificationsPage() {
 
     const closing = `Un abbraccio,\nFrancesca e Antonio`
 
-    return `${greeting}\n\n${messageBody || '[Messaggio centrale]'}\n\n${closing}`
+    // Get site URL from env or use default
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.com'
+    const siteLink = `\n\nVisita il nostro sito: ${siteUrl}`
+
+    return `${greeting}\n\n${messageBody || '[Messaggio centrale]'}\n\n${closing}${siteLink}`
   }
 
   const handlePreview = () => {
@@ -171,9 +175,9 @@ export default function NotificationsPage() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-[#FAF8F3] flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="bg-white/80 p-8 rounded-lg shadow-lg max-w-md w-full">
-          <h1 className="text-3xl font-serif text-wedding-gold text-center mb-6">
+          <h1 className="text-3xl font-serif text-wedding-sage-dark text-center mb-6">
             Accesso Admin
           </h1>
           <div className="space-y-4">
@@ -187,7 +191,7 @@ export default function NotificationsPage() {
                 value={adminKey}
                 onChange={(e) => setAdminKey(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && authenticate()}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark focus:border-transparent"
                 placeholder="Inserisci la chiave admin"
               />
             </div>
@@ -197,15 +201,9 @@ export default function NotificationsPage() {
             <button
               onClick={authenticate}
               disabled={loading || !adminKey}
-              className="w-full bg-wedding-gold text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-wedding-sage-dark text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Accesso in corso...' : 'Accedi'}
-            </button>
-            <button
-              onClick={() => router.push('/admin')}
-              className="w-full bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition-all"
-            >
-              Torna al Pannello Admin
             </button>
           </div>
         </div>
@@ -214,24 +212,18 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8F3] py-8 px-4">
+    <div className="py-16 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-serif text-wedding-gold">
+        <div className="mb-8">
+          <h1 className="text-4xl md:text-5xl font-serif text-wedding-sage-dark">
             Invio Notifiche Email
           </h1>
-          <button
-            onClick={() => router.push('/admin')}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-all"
-          >
-            Torna al Pannello
-          </button>
         </div>
 
         <div className="bg-white/80 p-8 rounded-lg shadow-lg space-y-6">
           {/* Recipients Info */}
           <div className="border-b border-gray-200 pb-4">
-            <h2 className="text-2xl font-serif text-wedding-gold mb-2">
+            <h2 className="text-2xl font-serif text-wedding-sage-dark mb-2">
               Destinatari
             </h2>
             {loading ? (
@@ -258,7 +250,7 @@ export default function NotificationsPage() {
               value={messageBody}
               onChange={(e) => setMessageBody(e.target.value)}
               rows={8}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark focus:border-transparent"
               placeholder="Inserisci il messaggio centrale che verrà inviato a tutti i destinatari..."
             />
           </div>
@@ -293,6 +285,7 @@ export default function NotificationsPage() {
               <li><strong>Saluto:</strong> "Ciao [Nome]," per singoli o "Ciao [Nome1], [Nome2] e [Nome3]," per gruppi</li>
               <li><strong>Messaggio centrale:</strong> Il testo che inserisci sopra</li>
               <li><strong>Chiusura:</strong> "Un abbraccio, Francesca e Antonio"</li>
+              <li><strong>Link al sito:</strong> Viene aggiunto automaticamente alla fine come link cliccabile</li>
             </ul>
           </div>
 
@@ -308,7 +301,7 @@ export default function NotificationsPage() {
           <button
             onClick={sendEmails}
             disabled={sending || !messageBody.trim() || recipients.length === 0}
-            className="w-full bg-wedding-gold text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
+            className="w-full bg-wedding-sage-dark text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
           >
             {sending ? 'Invio in corso...' : `Invia Email a ${recipients.length} Destinatari`}
           </button>

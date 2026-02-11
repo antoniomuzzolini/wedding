@@ -10,7 +10,7 @@ export default function SuccessMessage({ hasConfirmedMembers, onEdit }: SuccessM
     <div className="py-16 px-4 flex items-center justify-center">
       <div className="max-w-2xl mx-auto text-center bg-white/80 p-12 rounded-lg shadow-xl">
         {!hasConfirmedMembers && <div className="text-6xl mb-6">🎉</div>}
-        <h1 className="text-4xl font-serif text-wedding-gold mb-4">
+        <h1 className="text-4xl font-serif text-wedding-sage-dark mb-4">
           Grazie!
         </h1>
         <p className="text-xl text-gray-700 mb-8">
@@ -20,7 +20,7 @@ export default function SuccessMessage({ hasConfirmedMembers, onEdit }: SuccessM
         </p>
         <button
           onClick={onEdit}
-          className="bg-wedding-gold text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all"
+          className="bg-wedding-sage-dark text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all"
         >
           Modifica la tua risposta
         </button>

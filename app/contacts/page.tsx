@@ -2,13 +2,13 @@ export default function Contacts() {
   return (
     <div className="py-16 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-5xl md:text-6xl font-serif text-wedding-gold text-center mb-12">
+        <h1 className="text-5xl md:text-6xl font-serif text-wedding-sage-dark text-center mb-12">
           Contatti
         </h1>
 
         <div className="grid md:grid-cols-2 gap-8">
           <div className="bg-white/80 p-8 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-serif text-wedding-gold mb-4">Francesca Poles</h2>
+            <h2 className="text-2xl font-serif text-wedding-sage-dark mb-4">Francesca Poles</h2>
             <div className="space-y-3 text-gray-700">
               <p>
                 <strong>Email:</strong> <a href="mailto:francescapoles99@gmail.com">francescapoles99@gmail.com</a>
@@ -20,7 +20,7 @@ export default function Contacts() {
           </div>
 
           <div className="bg-white/80 p-8 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-serif text-wedding-gold mb-4">Antonio Muzzolini</h2>
+            <h2 className="text-2xl font-serif text-wedding-sage-dark mb-4">Antonio Muzzolini</h2>
             <div className="space-y-3 text-gray-700">
               <p>
                 <strong>Email:</strong> <a href="mailto:antoniomuzzolini@gmail.com">antoniomuzzolini@gmail.com</a>
@@ -33,7 +33,7 @@ export default function Contacts() {
         </div>
 
         <div className="mt-12 bg-white/80 p-8 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-serif text-wedding-gold mb-6 text-center">
+          <h2 className="text-2xl font-serif text-wedding-sage-dark mb-6 text-center">
             Informazioni sulla Location
           </h2>
           <div className="text-gray-700 space-y-3 text-center mb-6">
@@ -66,7 +66,7 @@ export default function Contacts() {
                 href="https://maps.app.goo.gl/ZRsAMHkpABFBpDu28"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-wedding-gold hover:underline"
+                className="text-wedding-sage-dark hover:underline"
               >
                 Apri in Google Maps
               </a>

@@ -16,7 +16,7 @@ export default function MemberResponseForm({
 }: MemberResponseFormProps) {
   return (
     <div className="border border-gray-200 rounded-lg p-6 space-y-4">
-      <h3 className="text-xl font-serif text-wedding-gold mb-4">
+      <h3 className="text-xl font-serif text-wedding-sage-dark mb-4">
         {member.name} {member.surname || ''}
       </h3>
 
@@ -62,7 +62,7 @@ export default function MemberResponseForm({
             onChange={(e) => onUpdate(index, 'dietary_requirements', e.target.value)}
             placeholder="Allergie o restrizioni alimentari?"
             rows={2}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-gold focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark focus:border-transparent"
           />
         </div>
       )}
