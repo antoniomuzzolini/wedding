@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
     const pdfBytes = await mergedPdf.save()
     
     // Return PDF as response
-    return new NextResponse(pdfBytes, {
+    return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="partecipazioni-${new Date().toISOString().split('T')[0]}.pdf"`,
