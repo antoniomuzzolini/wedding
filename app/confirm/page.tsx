@@ -104,7 +104,7 @@ function ConfirmAttendanceContent() {
       const responses: FamilyMemberResponse[] = memberResponses.map(mr => ({
         guest_id: mr.guest_id,
         response_status: mr.response_status,
-        menu_type: mr.response_status === 'confirmed' ? 'adulto' as MenuType : undefined,
+        // menu_type non viene inviato - gestito solo dall'admin
         dietary_requirements: mr.response_status === 'confirmed' && mr.dietary_requirements ? mr.dietary_requirements : undefined,
       }))
 
@@ -137,16 +137,20 @@ function ConfirmAttendanceContent() {
     return (
       <SuccessMessage 
         hasConfirmedMembers={hasConfirmedMembers}
+        familyMembersCount={familyMembers.length}
         onEdit={() => setSubmitted(false)}
       />
     )
   }
 
+  const isMultiple = familyMembers.length > 1
+  const pageTitle = isMultiple ? "Confermate la Vostra Presenza" : "Conferma la Tua Presenza"
+
   return (
     <div className="py-16 px-4">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-5xl md:text-6xl font-serif text-wedding-sage-dark text-center mb-12">
-          Conferma la Tua Presenza
+          {guest ? pageTitle : "Conferma la Tua Presenza"}
         </h1>
 
         {!guest ? (

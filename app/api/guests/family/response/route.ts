@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { FamilyMemberResponse } from '@/lib/types';
+import { sendConfirmationRecapEmail } from '@/lib/utils/email';
 
 // PUT /api/guests/family/response - Update multiple family members' responses (public)
 export async function PUT(request: NextRequest) {
@@ -67,10 +68,10 @@ export async function PUT(request: NextRequest) {
         continue; // Skip if guest not found
       }
 
-      // Set menu_type to 'adulto' by default if confirmed, otherwise keep existing or set to null
-      const finalMenuType = response_status === 'confirmed' 
-        ? (menu_type || 'adulto')
-        : null;
+      // menu_type non viene modificato dagli utenti - gestito solo dall'admin
+      // Se declined, impostiamo menu_type a null, altrimenti manteniamo quello esistente
+      const currentMenuType = (guest as any).menu_type;
+      const finalMenuType = response_status === 'declined' ? null : currentMenuType;
 
       await db.prepare(
         `UPDATE guests 
@@ -104,6 +105,22 @@ export async function PUT(request: NextRequest) {
            WHERE id = ?`
         ).run(notification_email.trim(), groupLeaderId);
       }
+    }
+
+    // Send recap email to admin
+    try {
+      await sendConfirmationRecapEmail(updatedGuests.map((g: any) => ({
+        id: g.id,
+        name: g.name,
+        surname: g.surname || '',
+        response_status: g.response_status,
+        menu_type: g.menu_type,
+        dietary_requirements: g.dietary_requirements,
+        invitation_type: g.invitation_type,
+      })));
+    } catch (emailError) {
+      // Log error but don't fail the request if email fails
+      console.error('Error sending confirmation recap email:', emailError);
     }
 
     return NextResponse.json({ guests: updatedGuests });

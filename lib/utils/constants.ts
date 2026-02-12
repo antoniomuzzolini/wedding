@@ -36,6 +36,6 @@ export const PARTICIPATION_MESSAGES = {
   },
   QR_CODE: {
     SINGLE: 'Scansiona il qr code oppure contattaci per confermare la tua presenza',
-    MULTIPLE: 'Scansiona il qr code oppure contattaci per confermare la vostra presenza',
+    MULTIPLE: 'Scansionate il qr code oppure contattateci per confermare la vostra presenza',
   },
 } as const
