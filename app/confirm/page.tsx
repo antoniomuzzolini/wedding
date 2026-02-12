@@ -147,7 +147,7 @@ function ConfirmAttendanceContent() {
   const pageTitle = isMultiple ? "Confermate la Vostra Presenza" : "Conferma la Tua Presenza"
 
   return (
-    <div className="py-16 px-4">
+    <div className="pt-8 pb-16 px-4">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-5xl md:text-6xl font-serif text-wedding-sage-dark text-center mb-12">
           {guest ? pageTitle : "Conferma la Tua Presenza"}
@@ -272,7 +272,7 @@ function ConfirmAttendanceContent() {
 export default function ConfirmAttendance() {
   return (
     <Suspense fallback={
-      <div className="py-16 px-4 flex items-center justify-center">
+      <div className="pt-8 pb-16 px-4 flex items-center justify-center">
         <div className="text-center">
           <div className="text-2xl text-gray-600">Caricamento...</div>
         </div>

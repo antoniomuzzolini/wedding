@@ -1,6 +1,6 @@
 export default function Contacts() {
   return (
-    <div className="py-16 px-4">
+    <div className="pt-8 pb-16 px-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-5xl md:text-6xl font-serif text-wedding-sage-dark text-center mb-12">
           Contatti

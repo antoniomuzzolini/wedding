@@ -149,7 +149,7 @@ export default function RootLayout({
             backgroundSize: 'cover',
             backgroundPosition: 'center center',
             backgroundRepeat: 'no-repeat',
-            opacity: 0.25,
+            opacity: 0.4,
             pointerEvents: 'none',
           }}
         />

@@ -88,7 +88,7 @@ export default function Navigation() {
   }, [pathname])
 
   const baseNavItems = [
-    { href: '/', label: 'Benvenuto' },
+    { href: '/', label: 'ci sposiamo!' },
     { href: '/us', label: 'Noi' },
     { href: '/gift-list', label: 'Lista Nozze' },
     { href: '/contacts', label: 'Contatti' },

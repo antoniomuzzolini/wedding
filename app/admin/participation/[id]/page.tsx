@@ -88,7 +88,7 @@ export default function ParticipationPage() {
           backgroundSize: 'cover',
           backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
-          opacity: 0.35,
+          opacity: 0.5,
           pointerEvents: 'none',
           WebkitPrintColorAdjust: 'exact',
           printColorAdjust: 'exact',

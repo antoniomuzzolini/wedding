@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function Welcome() {
   return (
-    <div className="flex flex-col items-center justify-center px-4 py-16">
+    <div className="flex flex-col items-center justify-center px-4 pt-8 pb-16">
       {/* Header Image */}
       <div className="w-full max-w-6xl mb-8 relative h-64 md:h-96 rounded-lg overflow-hidden shadow-xl">
         <Image
