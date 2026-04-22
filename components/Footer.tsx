@@ -1,11 +1,11 @@
-import Image from 'next/image'
+import LoadingImage from '@/components/LoadingImage'
 
 export default function Footer() {
   return (
     <footer className="mt-auto">
       {/* Footer Image */}
       <div className="w-full relative h-48 md:h-64 overflow-hidden">
-        <Image
+        <LoadingImage
           src="/images/headers/footer.jpg"
           alt="The Puzzles Wedding - Footer"
           fill

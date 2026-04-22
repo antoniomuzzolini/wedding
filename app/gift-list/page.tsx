@@ -1,7 +1,7 @@
 'use client'
 
-import Image from 'next/image'
 import { useState } from 'react'
+import LoadingImage from '@/components/LoadingImage'
 
 export default function GiftList() {
   const iban = 'IT26 H050 3401 7530 0000 0176 451'
@@ -39,7 +39,7 @@ export default function GiftList() {
 
         {/* Foto della coppia */}
         <div className="relative w-full max-w-2xl mx-auto mb-8 aspect-[4/2.7] rounded-lg overflow-hidden shadow-xl">
-          <Image
+          <LoadingImage
             src="/images/gift-list.jpg"
             alt="Francesca Poles e Antonio Muzzolini - Lista Nozze"
             fill

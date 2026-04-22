@@ -1,5 +1,5 @@
-import Image from 'next/image'
 import { Metadata } from 'next'
+import LoadingImage from '@/components/LoadingImage'
 
 export const metadata: Metadata = {
   title: 'Home',
@@ -16,7 +16,7 @@ export default function Welcome() {
     <div className="flex flex-col items-center justify-center px-4 pt-8 pb-16">
       {/* Header Image */}
       <div className="w-full max-w-6xl mb-8 relative h-64 md:h-96 rounded-lg overflow-hidden shadow-xl">
-        <Image
+        <LoadingImage
           src="/images/welcome.jpg"
           alt="Francesca Poles e Antonio Muzzolini - Matrimonio 13 Settembre 2026 Villa Caiselli"
           fill

@@ -1,5 +1,5 @@
-import Image from 'next/image'
 import { formatSectionName } from '../utils'
+import LoadingImage from '@/components/LoadingImage'
 
 interface GallerySectionProps {
   sectionName: string
@@ -20,7 +20,7 @@ export default function GallerySection({ sectionName, images, onImageClick }: Ga
             onClick={() => onImageClick(src, sectionName, index)}
             className="relative aspect-square rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform cursor-pointer group"
           >
-            <Image
+            <LoadingImage
               src={src}
               alt={`${formatSectionName(sectionName)} - Foto ${index + 1}`}
               fill

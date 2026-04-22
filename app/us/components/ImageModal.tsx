@@ -1,7 +1,7 @@
-import Image from 'next/image'
 import { SelectedImage, GallerySections } from '../types'
 import { formatSectionName } from '../utils'
 import ModalButton from './ModalButton'
+import LoadingImage from '@/components/LoadingImage'
 
 interface ImageModalProps {
   selectedImage: SelectedImage
@@ -73,7 +73,7 @@ export default function ImageModal({
         className="relative max-w-7xl max-h-full w-full h-full flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
-        <Image
+        <LoadingImage
           src={selectedImage.src}
           alt={`${formatSectionName(selectedImage.sectionName)} - Foto ${selectedImage.index + 1}`}
           width={1200}

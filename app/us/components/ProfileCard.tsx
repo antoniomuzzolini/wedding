@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import LoadingImage from '@/components/LoadingImage'
 
 interface ProfileCardProps {
   imageSrc: string
@@ -10,7 +10,7 @@ export default function ProfileCard({ imageSrc, imageAlt, name }: ProfileCardPro
   return (
     <div className="bg-white/60 p-8 rounded-lg shadow-lg">
       <div className="relative w-48 h-48 mx-auto mb-6 rounded-full overflow-hidden shadow-lg">
-        <Image
+        <LoadingImage
           src={imageSrc}
           alt={imageAlt}
           fill
