@@ -79,21 +79,18 @@ export default function ParticipationPage() {
     : ''
 
   return (
-    <div className={`${isPdfExport ? 'fixed inset-0' : 'min-h-screen'} bg-[#FAF8F3] relative overflow-hidden`}>
+    <div className={`${isPdfExport ? 'fixed inset-0' : 'min-h-screen'} participation-root bg-[#FAF8F3] relative overflow-hidden text-wedding-sage-dark`}>
       {/* Background image wrapper - visible in print */}
       <div 
-        className={`${isPdfExport ? 'absolute' : 'fixed'} inset-0 z-0 print:absolute`}
-        style={{
-          backgroundImage: "url('/images/background.jpg')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-          opacity: 0.5,
-          pointerEvents: 'none',
-          WebkitPrintColorAdjust: 'exact',
-          printColorAdjust: 'exact',
-          colorAdjust: 'exact',
-        }}
+        className={`participation-bg ${isPdfExport ? 'absolute' : 'fixed'} inset-0 z-0 print:absolute`}
+      />
+
+      {/* Print-safe background (doesn't rely on browser "print backgrounds") */}
+      <img
+        className="hidden print:block absolute inset-0 z-0 w-full h-full object-contain"
+        src="/images/partecipazione.png"
+        alt=""
+        aria-hidden="true"
       />
 
       <div className={`relative z-20 flex items-center justify-center ${isPdfExport ? 'p-0 h-full w-full' : 'p-8 print:p-0 min-h-[80vh] print:min-h-screen pb-24 print:pb-0'}`}>
@@ -102,35 +99,36 @@ export default function ParticipationPage() {
           <div className="text-center space-y-6 print:space-y-3 print:flex-1 print:flex print:flex-col print:justify-center">
             {/* Couple names */}
             <div className="space-y-1 print:space-y-0">
-              <h1 className="text-6xl print:text-6xl font-script text-wedding-sage-dark leading-tight">
+              <h1 className="text-6xl print:text-6xl font-script leading-tight">
                 {WEDDING_CONSTANTS.COUPLE_NAMES}
               </h1>
             </div>
 
-            {/* Event announcement */}
-            <div className="space-y-3 print:space-y-2 text-wedding-sage-dark font-serif text-base print:text-lg leading-relaxed print:mt-3">
+            <div className="space-y-3 print:space-y-2 font-serif text-base print:text-lg leading-relaxed print:mt-3">
               <p>
-                annunciano con gioia il loro matrimonio
+                annunciano con gioia il loro matrimonio!
               </p>
+            </div>
               
-              <p className="text-4xl print:text-5xl font-script text-wedding-sage-dark">
+            <div className="space-y-3 print:space-y-2 font-serif text-base print:text-lg leading-relaxed print:mt-3">
+              <p className="text-4xl print:text-5xl font-script">
                 {WEDDING_CONSTANTS.WEDDING_DATE}
               </p>
             </div>
             
-            <div className="mt-6 print:mt-4 space-y-1 print:space-y-0">
-              <p className="text-xl print:text-2xl font-serif text-wedding-sage-dark uppercase">
+            <div className="mt-6 print:mt-4 space-y-1 print:space-y-0 print-leading-single">
+              <p className="text-xl print:text-2xl font-serif uppercase">
                 {WEDDING_CONSTANTS.VENUE_NAME}
               </p>
-              <p className="text-xl print:text-2xl font-serif text-wedding-sage-dark">
+              <p className="text-xl print:text-2xl font-serif">
                 {WEDDING_CONSTANTS.VENUE_ADDRESS}
               </p>
             </div>
 
             {/* Time sections */}
-            <div className="pt-4 print:pt-3 space-y-3 print:space-y-2">
+            <div className="pt-10 print:pt-10 space-y-3 print:space-y-2">
               {guest.invitation_type === 'full' ? (
-                <div className="text-base print:text-lg font-serif text-wedding-sage-dark">
+                <div className="text-base print:text-lg font-serif print-leading-single">
                   <p>
                     {familyMembers.length > 1 
                       ? PARTICIPATION_MESSAGES.FULL_CEREMONY.MULTIPLE
@@ -141,7 +139,7 @@ export default function ParticipationPage() {
                   </p>
                 </div>
               ) : (
-                <div className="text-base print:text-lg font-serif text-wedding-sage-dark">
+                <div className="text-base print:text-lg font-serif">
                   <p>
                     {familyMembers.length > 1
                       ? PARTICIPATION_MESSAGES.EVENING.MULTIPLE
@@ -150,22 +148,11 @@ export default function ParticipationPage() {
                 </div>
               )}
             </div>
-
-            {/* Guest names list */}
-            <div className="pt-4 print:pt-3 border-t border-wedding-sage-medium border-opacity-30 mt-6 print:mt-3">
-              <div className="text-base print:text-lg text-wedding-sage-dark font-serif">
-                {familyMembers.map((member, index) => (
-                  <p key={member.id} className={index > 0 ? 'mt-1 print:mt-0' : ''}>
-                    {member.name} {member.surname || ''}
-                  </p>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* QR Code - bottom in print */}
           <div className="pt-8 print:pt-4 print:mt-auto print:flex-shrink-0 flex flex-col items-center">
-            <p className="text-base print:text-lg text-wedding-sage-dark font-serif mb-4 print:mb-3 italic print:text-center">
+            <p className="text-base print:text-lg font-serif mb-4 print:mb-3 italic print:text-center">
               {familyMembers.length > 1
                 ? PARTICIPATION_MESSAGES.QR_CODE.MULTIPLE
                 : PARTICIPATION_MESSAGES.QR_CODE.SINGLE}
@@ -176,7 +163,7 @@ export default function ParticipationPage() {
                   value={confirmationUrl}
                   size={isPdfExport ? 120 : 120}
                   level="M"
-                  fgColor="#7A9C96"
+                  fgColor="#4c6c4c"
                   bgColor="transparent"
                 />
               </div>

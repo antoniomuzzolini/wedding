@@ -15,6 +15,22 @@ body {
   min-height: 100vh;
 }
 
+.site-bg {
+  background-image: url('/images/bg.png');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .site-bg {
+    background-image: url('/images/partecipazione.png');
+    opacity: 0.4;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

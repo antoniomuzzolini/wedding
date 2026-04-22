@@ -9,15 +9,47 @@
   font-family: 'Cormorant Garamond', 'Georgia', serif;
 }
 
+/* Screen background for participation page (mobile differs) */
+.participation-bg {
+  background-image: url('/images/bg.png');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  opacity: 0.5;
+  pointer-events: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  color-adjust: exact;
+}
+
+@media (max-width: 768px) {
+  .participation-bg {
+    background-image: url('/images/partecipazione.png');
+  }
+}
+
 @media print {
   nav,
   header {
     display: none !important;
   }
+
+  /* Increase line spacing for print/PDF */
+  .participation-root .font-serif,
+  .participation-root .font-serif p,
+  .participation-root p.font-serif {
+    line-height: 2 !important;
+  }
+
+  /* Keep single line-height for specific blocks */
+  .participation-root .print-leading-single,
+  .participation-root .print-leading-single p {
+    line-height: 1.25 !important;
+  }
   
   @page {
     margin: 0;
-    size: A4 landscape;
+    size: A4 portrait;
   }
   
   .print\:hidden {
@@ -46,13 +78,24 @@
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
+
+  .participation-bg {
+    background-image: url('/images/partecipazione.png') !important;
+    background-size: contain !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    opacity: 1 !important;
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+  }
 }
 
 /* Fixed dimensions for PDF export - ensures consistent proportions */
 @media screen {
   body.pdf-export {
-    width: 1123px !important;
-    height: 794px !important;
+    width: 794px !important;
+    height: 1123px !important;
     overflow: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -61,5 +104,13 @@
   body.pdf-export > div {
     width: 100% !important;
     height: 100% !important;
+  }
+
+  body.pdf-export .participation-bg {
+    background-image: url('/images/partecipazione.png') !important;
+    background-size: contain !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    opacity: 1 !important;
   }
 }

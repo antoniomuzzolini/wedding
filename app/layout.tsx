@@ -143,15 +143,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col relative font-playfair">
         {/* Background image wrapper */}
         <div 
-          className="fixed inset-0 z-0"
-          style={{
-            backgroundImage: "url('/images/background.jpg')",
-            backgroundSize: 'cover',
-            backgroundPosition: 'center center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.4,
-            pointerEvents: 'none',
-          }}
+          className="site-bg fixed inset-0 z-0"
         />
         <Navigation />
         <main className="flex-grow relative z-10">{children}</main>

@@ -48,43 +48,45 @@ export default function GiftList() {
           />
         </div>
 
-        {/* Testo */}
-        <p className="text-lg md:text-xl text-gray-700 leading-relaxed text-center mb-12">
-          Non ne abbiamo una! Il regalo più grande è la vostra presenza, ma se volete contribuire al nostro viaggio di nozze in Giappone ci farebbe sicuramente piacere!
-        </p>
+        {/* Testo + dati (riquadro come "La Nostra Storia") */}
+        <div className="bg-white/60 p-8 rounded-lg shadow-lg mb-12">
+          <p className="text-lg md:text-xl text-gray-700 leading-relaxed text-center">
+            Non ne abbiamo una! Il regalo più grande è la vostra presenza, ma se volete contribuire al nostro viaggio di nozze in Giappone ci farebbe sicuramente piacere!
+          </p>
 
-        {/* Intestatario e IBAN centrati */}
-        <div className="flex flex-col items-center justify-center space-y-6">
-          {/* Intestatario */}
-          <div className="flex flex-col items-center">
-            <button
-              onClick={handleCopyHolder}
-              className="text-lg md:text-xl font-serif text-wedding-sage-dark text-center cursor-pointer hover:opacity-80 transition-opacity select-none touch-manipulation"
-              aria-label="Clicca per copiare l'intestatario"
-            >
-              {accountHolder}
-            </button>
-            {holderCopied && (
-              <p className="text-sm text-wedding-sage-dark mt-2 animate-fade-in">
-                Intestatario copiato!
-              </p>
-            )}
-          </div>
+          {/* Intestatario e IBAN centrati */}
+          <div className="mt-8 flex flex-col items-center justify-center space-y-6">
+            {/* Intestatario */}
+            <div className="flex flex-col items-center">
+              <button
+                onClick={handleCopyHolder}
+                className="text-lg md:text-xl font-serif text-wedding-sage-dark text-center cursor-pointer hover:opacity-80 transition-opacity select-none touch-manipulation"
+                aria-label="Clicca per copiare l'intestatario"
+              >
+                {accountHolder}
+              </button>
+              {holderCopied && (
+                <p className="text-sm text-wedding-sage-dark mt-2 animate-fade-in">
+                  Intestatario copiato!
+                </p>
+              )}
+            </div>
 
-          {/* IBAN */}
-          <div className="flex flex-col items-center">
-            <button
-              onClick={handleCopyIban}
-              className="text-xl md:text-2xl font-serif text-wedding-sage-dark text-center break-all cursor-pointer hover:opacity-80 transition-opacity select-none touch-manipulation"
-              aria-label="Clicca per copiare l'IBAN"
-            >
-              {iban}
-            </button>
-            {ibanCopied && (
-              <p className="text-sm text-wedding-sage-dark mt-2 animate-fade-in">
-                IBAN copiato!
-              </p>
-            )}
+            {/* IBAN */}
+            <div className="flex flex-col items-center">
+              <button
+                onClick={handleCopyIban}
+                className="text-xl md:text-2xl font-serif text-wedding-sage-dark text-center break-all cursor-pointer hover:opacity-80 transition-opacity select-none touch-manipulation"
+                aria-label="Clicca per copiare l'IBAN"
+              >
+                {iban}
+              </button>
+              {ibanCopied && (
+                <p className="text-sm text-wedding-sage-dark mt-2 animate-fade-in">
+                  IBAN copiato!
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>

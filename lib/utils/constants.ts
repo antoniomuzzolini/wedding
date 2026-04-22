@@ -4,7 +4,7 @@
 
 export const WEDDING_CONSTANTS = {
   COUPLE_NAMES: 'Francesca e Antonio',
-  WEDDING_DATE: 'domenica 13 settembre 2026',
+  WEDDING_DATE: 'Domenica 13 settembre 2026',
   VENUE_NAME: 'Villa Caiselli',
   VENUE_ADDRESS: 'via della ferrovia 8, Pavia di Udine',
   FULL_CEREMONY_TIME: '12',
