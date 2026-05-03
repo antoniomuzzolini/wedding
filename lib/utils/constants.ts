@@ -4,7 +4,7 @@
 
 export const WEDDING_CONSTANTS = {
   COUPLE_NAMES: 'Francesca e Antonio',
-  WEDDING_DATE: 'Domenica 13 settembre 2026',
+  WEDDING_DATE: 'domenica 13 settembre 2026',
   VENUE_NAME: 'Villa Caiselli',
   VENUE_ADDRESS: 'via della ferrovia 8, Pavia di Udine',
   FULL_CEREMONY_TIME: '12',
@@ -26,16 +26,16 @@ export const INVITATION_MESSAGES = {
 
 export const PARTICIPATION_MESSAGES = {
   FULL_CEREMONY: {
-    SINGLE: 'Ti aspettano alle ore 12 per celebrare e festeggiare assieme questo grande giorno.',
-    MULTIPLE: 'Vi aspettano alle ore 12 per celebrare e festeggiare assieme questo grande giorno.',
-    FOLLOW_UP: 'Seguirà sempre in villa il ricevimento con il pranzo.',
+    SINGLE: 'Ti aspettano alle ore 12 per celebrare e\nfesteggiare assieme questo grande giorno.',
+    MULTIPLE: 'Vi aspettano alle ore 12 per celebrare e\nfesteggiare assieme questo grande giorno.',
+    FOLLOW_UP: 'Seguirà sempre in villa\nil ricevimento con il pranzo.',
   },
   EVENING: {
-    SINGLE: 'Ti aspettano per festeggiare con te dalle ore 20.00 per il brindisi con taglio della torta.',
-    MULTIPLE: 'Vi aspettano per festeggiare con voi dalle ore 20.00 per il brindisi con taglio della torta.',
+    SINGLE: 'Ti aspettano per festeggiare assieme\ndalle ore 20 per il brindisi\ncon taglio della torta.\n\n',
+    MULTIPLE: 'Vi aspettano per festeggiare assieme\ndalle ore 20 per il brindisi\ncon taglio della torta.\n\n',
   },
   QR_CODE: {
-    SINGLE: 'Scansiona il qr code oppure contattaci per confermare la tua presenza',
-    MULTIPLE: 'Scansionate il qr code oppure contattateci per confermare la vostra presenza',
+    SINGLE: 'Scansiona il codice QR oppure contattaci\nper confermare la tua presenza',
+    MULTIPLE: 'Scansionate il codice QR oppure contattateci\nper confermare la vostra presenza',
   },
 } as const
