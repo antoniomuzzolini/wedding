@@ -184,13 +184,13 @@ export async function GET(request: NextRequest) {
     
     const page = await browser.newPage()
     
-    // Set viewport to A4 landscape dimensions at 150 DPI for consistent proportions
-    // A4 landscape: 297mm x 210mm = 11.69" x 8.27"
-    // At 150 DPI: 1754px x 1239px
-    // Using exact A4 landscape proportions ensures consistent rendering
+    // Set viewport to A4 portrait dimensions at 150 DPI for consistent proportions
+    // A4 portrait: 210mm x 297mm = 8.27" x 11.69"
+    // At 150 DPI: 1239px x 1754px
+    // Using exact A4 portrait proportions ensures consistent rendering
     await page.setViewport({
-      width: 1754,
-      height: 1239,
+      width: 1239,
+      height: 1754,
       deviceScaleFactor: 1,
     })
     
@@ -223,16 +223,16 @@ export async function GET(request: NextRequest) {
       const participationUrl = `${baseUrl}/admin/participation/${encodedId}`
       
       try {
-        // Add pdf-export parameter to URL to trigger fixed-size CSS
-        const pdfUrl = `${participationUrl}?pdf-export=true`
-        
-        await page.goto(pdfUrl, {
+        await page.goto(participationUrl, {
           waitUntil: 'networkidle0',
           timeout: 30000,
         })
         
         // Wait for content to load and fonts to be ready
         await page.waitForSelector('h1', { timeout: 10000 })
+
+        // Render using print media to match the browser print layout
+        await page.emulateMediaType('print')
         
         // Wait for fonts to load (Google Fonts)
         await page.evaluateHandle(() => document.fonts.ready)
@@ -240,10 +240,10 @@ export async function GET(request: NextRequest) {
         // Wait a bit more for any animations or transitions
         await new Promise(resolve => setTimeout(resolve, 500))
         
-        // Generate PDF for this page with exact A4 landscape dimensions
+        // Generate PDF for this page with exact A4 portrait dimensions
         const pdfBuffer = await page.pdf({
           format: 'A4',
-          landscape: true,
+          landscape: false,
           printBackground: true,
           preferCSSPageSize: false, // Use format dimensions instead of CSS @page
           margin: {

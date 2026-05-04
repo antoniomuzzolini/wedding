@@ -200,7 +200,9 @@ function ConfirmAttendanceContent() {
             */}
             <div className="text-center py-8">
               <p className="text-lg text-gray-700 mb-4">
-                Questa pagina è accessibile solo tramite il link fornito nell'invito.
+                Questa pagina è accessibile solo tramite il codice QR fornito nell'invito.<br />
+                In caso di problemi ad accedere, <a href="/contacts" className="text-blue-600 underline hover:text-blue-800 visited:text-purple-600">contattaci</a>!
+           
               </p>
               {error && (
                 <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg">{error}</div>
