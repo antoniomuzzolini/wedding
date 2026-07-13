@@ -253,18 +253,37 @@ export default function TablesPage() {
 
   const toggleFamilyTag = async (family: FamilyGroup, tagId: number) => {
     const allHaveTag = family.members.every((m) => (tagsByGuestId.get(m.id) || []).includes(tagId))
-    await apiCall(() =>
-      fetch('/api/guests/tags', {
+    const action = allHaveTag ? 'remove' : 'add'
+    const memberIds = family.members.map((m) => m.id)
+
+    // Aggiornamento ottimistico: il chip cambia subito, l'API viene chiamata
+    // in background; in caso di errore si ricarica lo stato reale dal server
+    setGuestTags((prev) => {
+      if (action === 'remove') {
+        return prev.filter((gt) => !(gt.tag_id === tagId && memberIds.includes(gt.guest_id)))
+      }
+      const alreadyTagged = new Set(prev.filter((gt) => gt.tag_id === tagId).map((gt) => gt.guest_id))
+      const additions = memberIds
+        .filter((id) => !alreadyTagged.has(id))
+        .map((id) => ({ guest_id: id, tag_id: tagId }))
+      return [...prev, ...additions]
+    })
+
+    try {
+      const response = await fetch('/api/guests/tags', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          guest_ids: family.members.map((m) => m.id),
-          tag_id: tagId,
-          action: allHaveTag ? 'remove' : 'add',
-          adminKey,
-        }),
+        body: JSON.stringify({ guest_ids: memberIds, tag_id: tagId, action, adminKey }),
       })
-    )
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        setError(data.error || 'Errore nel salvataggio del tag')
+        await loadData()
+      }
+    } catch (err) {
+      setError('Si è verificato un errore: ' + (err instanceof Error ? err.message : String(err)))
+      await loadData()
+    }
   }
 
   const assignGuests = async (guestIds: number[], tableId: number | null) => {
