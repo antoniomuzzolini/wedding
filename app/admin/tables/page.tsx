@@ -44,6 +44,8 @@ export default function TablesPage() {
   const [includePending, setIncludePending] = useState(false)
   const [layoutSeats, setLayoutSeats] = useState({ min: 8, max: 10 })
   const [layout, setLayout] = useState<LayoutSuggestion | null>(null)
+  const [splitFamily, setSplitFamily] = useState<number | null>(null)
+  const [splitTableFamily, setSplitTableFamily] = useState<string | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem('adminAuthenticated')
@@ -722,29 +724,75 @@ export default function TablesPage() {
                         })}
                       </div>
                     )}
-                    <select
-                      value=""
-                      disabled={saving || tables.length === 0}
-                      onChange={(e) => {
-                        if (e.target.value) assignGuests(family.unassigned.map((m) => m.id), parseInt(e.target.value))
-                      }}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                    >
-                      <option value="">
-                        {family.assignedTableId != null
-                          ? `Assegna (resto famiglia: ${tableById.get(family.assignedTableId)?.name || '?'})`
-                          : 'Assegna a tavolo...'}
-                      </option>
-                      {tables.map((table) => {
-                        const occupied = (occupantsByTable.get(table.id) || []).length
-                        const free = table.capacity - occupied
-                        return (
-                          <option key={table.id} value={table.id} disabled={free < family.unassigned.length}>
-                            {table.name} ({free} liberi)
-                          </option>
-                        )
-                      })}
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value=""
+                        disabled={saving || tables.length === 0}
+                        onChange={(e) => {
+                          if (e.target.value) assignGuests(family.unassigned.map((m) => m.id), parseInt(e.target.value))
+                        }}
+                        className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm"
+                      >
+                        <option value="">
+                          {family.assignedTableId != null
+                            ? `Assegna (resto famiglia: ${tableById.get(family.assignedTableId)?.name || '?'})`
+                            : 'Assegna a tavolo...'}
+                        </option>
+                        {tables.map((table) => {
+                          const occupied = (occupantsByTable.get(table.id) || []).length
+                          const free = table.capacity - occupied
+                          return (
+                            <option key={table.id} value={table.id} disabled={free < family.unassigned.length}>
+                              {table.name} ({free} liberi)
+                            </option>
+                          )
+                        })}
+                      </select>
+                      {family.unassigned.length > 1 && (
+                        <button
+                          onClick={() => setSplitFamily(splitFamily === family.key ? null : family.key)}
+                          className={`px-2 py-1.5 rounded text-xs border whitespace-nowrap ${
+                            splitFamily === family.key
+                              ? 'bg-wedding-sage-dark text-white border-wedding-sage-dark'
+                              : 'text-gray-600 border-gray-300 hover:border-gray-500'
+                          }`}
+                          title="Assegna i membri a tavoli diversi"
+                        >
+                          Dividi
+                        </button>
+                      )}
+                    </div>
+                    {splitFamily === family.key && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded space-y-1.5">
+                        {family.unassigned.map((m) => (
+                          <div key={m.id} className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-gray-700">
+                              {`${m.name} ${m.surname || ''}`.trim()}
+                              {m.response_status === 'pending' && <span className="text-amber-600" title="In attesa di risposta"> (?)</span>}
+                            </span>
+                            <select
+                              value=""
+                              disabled={saving || tables.length === 0}
+                              onChange={(e) => {
+                                if (e.target.value) assignGuests([m.id], parseInt(e.target.value))
+                              }}
+                              className="px-1.5 py-1 border border-gray-300 rounded text-xs"
+                            >
+                              <option value="">Tavolo...</option>
+                              {tables.map((table) => {
+                                const occupied = (occupantsByTable.get(table.id) || []).length
+                                const free = table.capacity - occupied
+                                return (
+                                  <option key={table.id} value={table.id} disabled={free < 1}>
+                                    {table.name} ({free})
+                                  </option>
+                                )
+                              })}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -921,30 +969,77 @@ export default function TablesPage() {
                         {Array.from(occupantFamilies.entries()).map(([key, members]) => {
                           const memberTagIds = new Set<number>()
                           members.forEach((m) => (tagsByGuestId.get(m.id) || []).forEach((t) => memberTagIds.add(t)))
+                          const splitKey = `${table.id}:${key}`
+                          const isSplit = splitTableFamily === splitKey
                           return (
-                            <div key={key} className="flex items-start justify-between gap-2 text-sm border border-gray-100 rounded p-2">
-                              <div>
-                                <div className="text-gray-800">
-                                  {members.map((m, i) => (
-                                    <span key={m.id}>
-                                      {i > 0 && ', '}
-                                      {`${m.name} ${m.surname || ''}`.trim()}
-                                      {m.response_status === 'pending' && <span className="text-amber-600" title="In attesa di risposta"> (?)</span>}
-                                    </span>
-                                  ))}
+                            <div key={key} className="text-sm border border-gray-100 rounded p-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <div className="text-gray-800">
+                                    {members.map((m, i) => (
+                                      <span key={m.id}>
+                                        {i > 0 && ', '}
+                                        {`${m.name} ${m.surname || ''}`.trim()}
+                                        {m.response_status === 'pending' && <span className="text-amber-600" title="In attesa di risposta"> (?)</span>}
+                                      </span>
+                                    ))}
+                                  </div>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {Array.from(memberTagIds).map((tagId) => renderTagChip(tagId, true))}
+                                  </div>
                                 </div>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {Array.from(memberTagIds).map((tagId) => renderTagChip(tagId, true))}
+                                <div className="flex gap-2 whitespace-nowrap">
+                                  {members.length > 1 && (
+                                    <button
+                                      onClick={() => setSplitTableFamily(isSplit ? null : splitKey)}
+                                      className={`text-xs ${isSplit ? 'text-wedding-sage-dark font-semibold' : 'text-gray-400 hover:text-gray-700'}`}
+                                      title="Sposta o togli singoli membri"
+                                    >
+                                      Dividi
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => assignGuests(members.map((m) => m.id), null)}
+                                    disabled={saving}
+                                    className="text-gray-400 hover:text-red-600 text-xs"
+                                    title="Rimuovi dal tavolo"
+                                  >
+                                    Rimuovi
+                                  </button>
                                 </div>
                               </div>
-                              <button
-                                onClick={() => assignGuests(members.map((m) => m.id), null)}
-                                disabled={saving}
-                                className="text-gray-400 hover:text-red-600 text-xs whitespace-nowrap"
-                                title="Rimuovi dal tavolo"
-                              >
-                                Rimuovi
-                              </button>
+                              {isSplit && (
+                                <div className="mt-2 p-2 bg-gray-50 rounded space-y-1.5">
+                                  {members.map((m) => (
+                                    <div key={m.id} className="flex items-center justify-between gap-2">
+                                      <span className="text-xs text-gray-700">
+                                        {`${m.name} ${m.surname || ''}`.trim()}
+                                        {m.response_status === 'pending' && <span className="text-amber-600"> (?)</span>}
+                                      </span>
+                                      <select
+                                        value=""
+                                        disabled={saving}
+                                        onChange={(e) => {
+                                          if (e.target.value === 'none') assignGuests([m.id], null)
+                                          else if (e.target.value) assignGuests([m.id], parseInt(e.target.value))
+                                        }}
+                                        className="px-1.5 py-1 border border-gray-300 rounded text-xs"
+                                      >
+                                        <option value="">Sposta...</option>
+                                        <option value="none">Togli dal tavolo</option>
+                                        {tables.filter((t) => t.id !== table.id).map((t) => {
+                                          const free = t.capacity - (occupantsByTable.get(t.id) || []).length
+                                          return (
+                                            <option key={t.id} value={t.id} disabled={free < 1}>
+                                              {t.name} ({free})
+                                            </option>
+                                          )
+                                        })}
+                                      </select>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )
                         })}

@@ -155,17 +155,29 @@ export function computeSeatingProposal(
   }));
   const tableById = new Map(tables.map((t) => [t.id, t]));
 
-  // Le famiglie bloccate occupano i loro posti e contribuiscono ai tag del tavolo
-  const lockedFamilies = buildFamilies(lockedGuests, tagsByGuest);
-  const lockedTableByFamilyKey = new Map<number, number>();
-  lockedFamilies.forEach((family) => {
-    // i membri bloccati di una famiglia stanno per costruzione sullo stesso tavolo
-    const firstGuest = lockedGuests.find((g) => familyKey(g) === family.key);
-    const table = firstGuest?.table_id != null ? tableById.get(firstGuest.table_id) : undefined;
-    if (table) {
-      placeFamily(table, family);
-      lockedTableByFamilyKey.set(family.key, table.id);
-    }
+  // I bloccati occupano i loro posti e contribuiscono ai tag del tavolo.
+  // Raggruppati per (famiglia, tavolo): l'admin può aver diviso manualmente
+  // una famiglia su più tavoli, e la divisione va rispettata.
+  const lockedGroups = new Map<string, SeatingGuestInput[]>();
+  for (const guest of lockedGuests) {
+    if (guest.table_id == null) continue;
+    const groupKey = `${familyKey(guest)}:${guest.table_id}`;
+    const list = lockedGroups.get(groupKey) || [];
+    list.push(guest);
+    lockedGroups.set(groupKey, list);
+  }
+  // per ogni famiglia, i tavoli dove ha già membri (con quanti)
+  const lockedTablesByFamilyKey = new Map<number, { tableId: number; count: number }[]>();
+  lockedGroups.forEach((members) => {
+    const key = familyKey(members[0]);
+    const tableId = members[0].table_id as number;
+    const table = tableById.get(tableId);
+    if (!table) return;
+    const family = Array.from(buildFamilies(members, tagsByGuest).values())[0];
+    placeFamily(table, family);
+    const list = lockedTablesByFamilyKey.get(key) || [];
+    list.push({ tableId, count: members.length });
+    lockedTablesByFamilyKey.set(key, list);
   });
 
   // Famiglie da piazzare: le più grandi prima (hanno meno tavoli candidati)
@@ -179,12 +191,16 @@ export function computeSeatingProposal(
 
   for (const family of toPlace) {
     // Se parte della famiglia è già seduta (bloccata), i membri liberi vanno
-    // obbligatoriamente allo stesso tavolo: una famiglia non si divide mai.
-    const lockedTableId = lockedTableByFamilyKey.get(family.key);
-    if (lockedTableId != null) {
-      const table = tableById.get(lockedTableId);
-      if (table && table.capacity - table.occupied >= family.size) {
-        placeFamily(table, family);
+    // su uno dei suoi tavoli — preferendo quello con più familiari — perché
+    // l'algoritmo non crea mai nuove divisioni di famiglia da solo.
+    const lockedTables = lockedTablesByFamilyKey.get(family.key);
+    if (lockedTables && lockedTables.length > 0) {
+      const target = [...lockedTables]
+        .sort((a, b) => b.count - a.count)
+        .map(({ tableId }) => tableById.get(tableId))
+        .find((t) => t && t.capacity - t.occupied >= family.size);
+      if (target) {
+        placeFamily(target, family);
         // membri vincolati al tavolo della famiglia: esclusi dalla passata di scambi
         stuckWithFamily.push(family);
       } else {
