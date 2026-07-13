@@ -17,6 +17,11 @@ interface Proposal {
   unplacedFamilies: { memberIds: number[]; size: number }[]
 }
 
+interface LayoutSuggestion {
+  tables: { name: string; capacity: number; guestIds: number[] }[]
+  unplacedFamilies: { memberIds: number[]; size: number }[]
+}
+
 const TAG_COLORS = ['#7c9070', '#b0805b', '#7d8bae', '#a97d9c', '#c2a24b', '#6fa3a0', '#a86b6b', '#8a8a8a']
 
 export default function TablesPage() {
@@ -36,6 +41,9 @@ export default function TablesPage() {
   const [editTableForm, setEditTableForm] = useState({ name: '', capacity: 10 })
   const [taggingFamily, setTaggingFamily] = useState<number | null>(null)
   const [proposal, setProposal] = useState<Proposal | null>(null)
+  const [includePending, setIncludePending] = useState(false)
+  const [layoutSeats, setLayoutSeats] = useState({ min: 8, max: 10 })
+  const [layout, setLayout] = useState<LayoutSuggestion | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem('adminAuthenticated')
@@ -117,9 +125,11 @@ export default function TablesPage() {
   const tagById = new Map(tags.map((t) => [t.id, t]))
   const tableById = new Map(tables.map((t) => [t.id, t]))
 
-  // Solo gli ospiti a cerimonia completa e confermati siedono ai tavoli
+  // Ai tavoli siedono i confermati a cerimonia completa; i pending solo se richiesto
   const eligibleGuests = guests.filter(
-    (g) => g.invitation_type === 'full' && g.response_status === 'confirmed'
+    (g) =>
+      g.invitation_type === 'full' &&
+      (g.response_status === 'confirmed' || (includePending && g.response_status === 'pending'))
   )
   const pendingFullCount = guests.filter(
     (g) => g.invitation_type === 'full' && g.response_status === 'pending'
@@ -304,11 +314,12 @@ export default function TablesPage() {
     setSaving(true)
     setError('')
     setProposal(null)
+    setLayout(null)
     try {
       const response = await fetch('/api/tables/auto-assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode, adminKey }),
+        body: JSON.stringify({ mode, include_pending: includePending, adminKey }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -337,6 +348,61 @@ export default function TablesPage() {
       })
     )
     if (ok) setProposal(null)
+  }
+
+  const requestLayout = async () => {
+    setSaving(true)
+    setError('')
+    setProposal(null)
+    setLayout(null)
+    try {
+      const response = await fetch('/api/tables/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          min_seats: layoutSeats.min,
+          max_seats: layoutSeats.max,
+          include_pending: includePending,
+          adminKey,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data.error || 'Errore nel calcolo del layout')
+        return
+      }
+      setLayout(data.layout)
+    } catch (err) {
+      setError('Si è verificato un errore: ' + (err instanceof Error ? err.message : String(err)))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const applyLayout = async () => {
+    if (!layout) return
+    if (tables.length > 0) {
+      const ok = confirm(
+        `Applicando il layout, i ${tables.length} tavoli esistenti verranno eliminati e le assegnazioni attuali azzerate. Gli ospiti e le loro conferme NON vengono toccati. Continuare?`
+      )
+      if (!ok) return
+    }
+    const success = await apiCall(() =>
+      fetch('/api/tables/apply-layout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tables: layout.tables.map((t) => ({
+            name: t.name,
+            capacity: t.capacity,
+            guest_ids: t.guestIds,
+          })),
+          replace_existing: tables.length > 0,
+          adminKey,
+        }),
+      })
+    )
+    if (success) setLayout(null)
   }
 
   // ---- Render ----
@@ -389,7 +455,20 @@ export default function TablesPage() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
           <h1 className="text-5xl font-serif text-wedding-sage-dark">Gestione Tavoli</h1>
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
+            <label className="flex items-center gap-2 text-sm text-gray-700 bg-white/80 px-4 py-3 rounded-lg shadow cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includePending}
+                onChange={(e) => {
+                  setIncludePending(e.target.checked)
+                  setProposal(null)
+                  setLayout(null)
+                }}
+                className="w-4 h-4 accent-amber-600"
+              />
+              Includi anche gli ospiti in attesa
+            </label>
             <button
               onClick={() => requestProposal('fill')}
               disabled={saving || tables.length === 0}
@@ -421,9 +500,9 @@ export default function TablesPage() {
             <div className="text-3xl font-bold text-green-800">{totalAssigned}/{totalToSeat}</div>
             <div className="text-gray-600">Confermati Assegnati</div>
           </div>
-          <div className="bg-gray-50 p-6 rounded-lg shadow-lg text-center">
-            <div className="text-3xl font-bold text-gray-800">{pendingFullCount}</div>
-            <div className="text-gray-600">In Attesa (esclusi)</div>
+          <div className={`p-6 rounded-lg shadow-lg text-center ${includePending ? 'bg-amber-50' : 'bg-gray-50'}`}>
+            <div className={`text-3xl font-bold ${includePending ? 'text-amber-700' : 'text-gray-800'}`}>{pendingFullCount}</div>
+            <div className="text-gray-600">In Attesa ({includePending ? 'inclusi' : 'esclusi'})</div>
           </div>
         </div>
 
@@ -462,6 +541,63 @@ export default function TablesPage() {
                   Scarta
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Layout suggestion preview */}
+        {layout && (
+          <div className="mb-8 p-6 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+              <div>
+                <h2 className="text-xl font-serif text-purple-900 mb-1">Layout suggerito</h2>
+                <p className="text-sm text-purple-800">
+                  {layout.tables.length} tavoli per {layout.tables.reduce((sum, t) => sum + t.guestIds.length, 0)} ospiti.
+                  Nulla è ancora stato salvato.
+                </p>
+                {tables.length > 0 && (
+                  <p className="text-sm text-red-700 mt-1">
+                    Applicando, i {tables.length} tavoli attuali verranno sostituiti (gli ospiti e le conferme restano intatti).
+                  </p>
+                )}
+                {layout.unplacedFamilies.length > 0 && (
+                  <p className="text-sm text-red-700 mt-1">
+                    Attenzione: {layout.unplacedFamilies.length}{' '}
+                    {layout.unplacedFamilies.length === 1 ? 'famiglia non trova' : 'famiglie non trovano'} posto.
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={applyLayout}
+                  disabled={saving}
+                  className="bg-purple-700 text-white px-6 py-2 rounded-lg hover:bg-purple-800 disabled:opacity-50"
+                >
+                  Crea tavoli e applica
+                </button>
+                <button
+                  onClick={() => setLayout(null)}
+                  className="bg-white border border-purple-300 text-purple-800 px-6 py-2 rounded-lg hover:bg-purple-100"
+                >
+                  Scarta
+                </button>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {layout.tables.map((t) => (
+                <div key={t.name} className="bg-white/70 border border-purple-200 rounded p-3 text-sm">
+                  <div className="font-semibold text-purple-900 mb-1">
+                    {t.name} — {t.guestIds.length} {t.guestIds.length === 1 ? 'persona' : 'persone'} (capienza {t.capacity})
+                  </div>
+                  <div className="text-gray-700">
+                    {t.guestIds
+                      .map((id) => guests.find((g) => g.id === id))
+                      .filter((g): g is Guest => !!g)
+                      .map((g) => `${g.name} ${g.surname || ''}`.trim())
+                      .join(', ')}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -527,8 +663,9 @@ export default function TablesPage() {
           <div className="bg-white/80 p-6 rounded-lg shadow-lg lg:col-span-1 self-start">
             <h2 className="text-2xl font-serif text-wedding-sage-dark mb-2">Da Assegnare</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Famiglie con ospiti confermati (cerimonia completa) senza tavolo.
+              Famiglie con ospiti {includePending ? 'confermati o in attesa' : 'confermati'} (cerimonia completa) senza tavolo.
               Clicca sui tag per assegnarli alla famiglia.
+              {includePending && <span className="text-amber-700"> Gli ospiti in attesa sono segnati con (?).</span>}
             </p>
             {loading ? (
               <div className="text-center py-8">Caricamento...</div>
@@ -545,7 +682,13 @@ export default function TablesPage() {
                       </span>
                     </div>
                     <div className="text-xs text-gray-500 mb-2">
-                      {family.unassigned.map((m) => `${m.name}`).join(', ')}
+                      {family.unassigned.map((m, i) => (
+                        <span key={m.id}>
+                          {i > 0 && ', '}
+                          {m.name}
+                          {m.response_status === 'pending' && <span className="text-amber-600" title="In attesa di risposta"> (?)</span>}
+                        </span>
+                      ))}
                     </div>
                     <div className="flex flex-wrap gap-1 mb-2">
                       {Array.from(family.tagIds).map((tagId) => renderTagChip(tagId, true))}
@@ -610,6 +753,49 @@ export default function TablesPage() {
 
           {/* Tables */}
           <div className="lg:col-span-2">
+            {/* Layout designer */}
+            <div className="bg-white/80 p-6 rounded-lg shadow-lg mb-6">
+              <h2 className="text-2xl font-serif text-wedding-sage-dark mb-2">Progetta Tavoli</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Indica quanti posti può avere un tavolo e il sistema suggerisce quanti tavoli servono,
+                di che dimensione e chi farci sedere (in base a famiglie e tag). Vedrai un&apos;anteprima prima di salvare.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="text-sm text-gray-700">
+                  Posti min
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={layoutSeats.min}
+                    onChange={(e) => setLayoutSeats({ ...layoutSeats, min: parseInt(e.target.value) || 1 })}
+                    className="ml-2 w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark"
+                  />
+                </label>
+                <label className="text-sm text-gray-700">
+                  Posti max
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={layoutSeats.max}
+                    onChange={(e) => setLayoutSeats({ ...layoutSeats, max: parseInt(e.target.value) || 1 })}
+                    className="ml-2 w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark"
+                  />
+                </label>
+                <button
+                  onClick={requestLayout}
+                  disabled={saving || layoutSeats.min > layoutSeats.max}
+                  className="bg-wedding-sage-dark text-white px-6 py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Suggerisci tavoli
+                </button>
+                {layoutSeats.min > layoutSeats.max && (
+                  <span className="text-xs text-red-600">Il minimo non può superare il massimo</span>
+                )}
+              </div>
+            </div>
+
             {/* Add table form */}
             <div className="bg-white/80 p-6 rounded-lg shadow-lg mb-6">
               <h2 className="text-2xl font-serif text-wedding-sage-dark mb-4">Aggiungi Tavolo</h2>
@@ -739,7 +925,13 @@ export default function TablesPage() {
                             <div key={key} className="flex items-start justify-between gap-2 text-sm border border-gray-100 rounded p-2">
                               <div>
                                 <div className="text-gray-800">
-                                  {members.map((m) => `${m.name} ${m.surname || ''}`.trim()).join(', ')}
+                                  {members.map((m, i) => (
+                                    <span key={m.id}>
+                                      {i > 0 && ', '}
+                                      {`${m.name} ${m.surname || ''}`.trim()}
+                                      {m.response_status === 'pending' && <span className="text-amber-600" title="In attesa di risposta"> (?)</span>}
+                                    </span>
+                                  ))}
                                 </div>
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {Array.from(memberTagIds).map((tagId) => renderTagChip(tagId, true))}

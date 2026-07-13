@@ -289,3 +289,68 @@ export function computeSeatingProposal(
     unplacedFamilies: unplaced.map((f) => ({ memberIds: f.memberIds, size: f.size })),
   };
 }
+
+export interface LayoutSuggestion {
+  // tavoli proposti, dal più numeroso al meno: nome progressivo, capienza
+  // consigliata e ospiti che ci siederebbero
+  tables: { name: string; capacity: number; guestIds: number[] }[];
+  unplacedFamilies: { memberIds: number[]; size: number }[];
+}
+
+/**
+ * Progetta da zero il numero e la dimensione dei tavoli, oltre alla
+ * disposizione: parte dal minimo numero di tavoli possibile (dato il tetto
+ * di posti per tavolo) e aggiunge tavoli finché tutte le famiglie trovano
+ * posto. La capienza consigliata di ogni tavolo è il numero di persone
+ * sedute (mai sotto minSeats), poi modificabile a mano.
+ */
+export function suggestTableLayout(
+  eligibleGuests: SeatingGuestInput[],
+  tagsByGuest: Map<number, number[]>,
+  minSeats: number,
+  maxSeats: number
+): LayoutSuggestion {
+  const families = Array.from(buildFamilies(eligibleGuests, tagsByGuest).values());
+  const total = families.reduce((sum, f) => sum + f.size, 0);
+  if (total === 0) {
+    return { tables: [], unplacedFamilies: [] };
+  }
+
+  // una famiglia più numerosa del tetto richiede comunque un tavolo su misura
+  const largestFamily = Math.max(...families.map((f) => f.size));
+  const seatCap = Math.max(maxSeats, largestFamily);
+
+  const baseCount = Math.max(1, Math.ceil(total / seatCap));
+  let lastProposal: SeatingProposal | null = null;
+  let lastTables: SeatingTableInput[] = [];
+
+  for (let extra = 0; extra <= 3; extra++) {
+    const virtualTables: SeatingTableInput[] = Array.from(
+      { length: baseCount + extra },
+      (_, i) => ({ id: i + 1, capacity: seatCap })
+    );
+    const proposal = computeSeatingProposal(eligibleGuests, tagsByGuest, virtualTables, []);
+    lastProposal = proposal;
+    lastTables = virtualTables;
+    if (proposal.unplacedFamilies.length === 0) break;
+  }
+
+  const guestsByTable = new Map<number, number[]>();
+  for (const assignment of lastProposal!.assignments) {
+    const list = guestsByTable.get(assignment.table_id) || [];
+    list.push(assignment.guest_id);
+    guestsByTable.set(assignment.table_id, list);
+  }
+
+  const tables = lastTables
+    .map((t) => guestsByTable.get(t.id) || [])
+    .filter((guestIds) => guestIds.length > 0)
+    .sort((a, b) => b.length - a.length)
+    .map((guestIds, index) => ({
+      name: `Tavolo ${index + 1}`,
+      capacity: Math.max(minSeats, guestIds.length),
+      guestIds,
+    }));
+
+  return { tables, unplacedFamilies: lastProposal!.unplacedFamilies };
+}
