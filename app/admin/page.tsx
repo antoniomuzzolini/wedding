@@ -485,6 +485,13 @@ export default function AdminPanel() {
   const fullCeremonyNeonatiConfirmed = fullCeremonyGuests.filter((g) => g.menu_type === 'neonato' && g.response_status === 'confirmed').length
   const fullCeremonyNeonatiDeclined = fullCeremonyGuests.filter((g) => g.menu_type === 'neonato' && g.response_status === 'declined').length
 
+  // Guests without menu_type (e.g. declined guests whose menu was cleared by the old response flow)
+  const fullCeremonyNoMenu = fullCeremonyGuests.filter((g) => !g.menu_type)
+  const fullCeremonyNoMenuInvited = fullCeremonyNoMenu.length
+  const fullCeremonyNoMenuPending = fullCeremonyNoMenu.filter((g) => g.response_status === 'pending').length
+  const fullCeremonyNoMenuConfirmed = fullCeremonyNoMenu.filter((g) => g.response_status === 'confirmed').length
+  const fullCeremonyNoMenuDeclined = fullCeremonyNoMenu.filter((g) => g.response_status === 'declined').length
+
   // Counts for evening only (sera) - total counts without age division
   const eveningGuests = guests.filter((g) => g.invitation_type === 'evening')
   const eveningInvited = eveningGuests.length
@@ -640,6 +647,34 @@ export default function AdminPanel() {
                 </div>
               </div>
             </div>
+
+            {/* Guests without an assigned menu (fix them via "Modifica") */}
+            {fullCeremonyNoMenuInvited > 0 && (
+              <div className="mb-4 pt-4 border-t border-gray-200">
+                <h4 className="text-lg font-semibold text-amber-700 mb-1">Senza menù assegnato</h4>
+                <p className="text-xs text-gray-500 mb-3">
+                  Ospiti senza fascia d&apos;età: assegna il menù con &quot;Modifica&quot; per includerli nelle statistiche sopra.
+                </p>
+                <div className="grid grid-cols-4 gap-2 text-sm">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-gray-800">{fullCeremonyNoMenuInvited}</div>
+                    <div className="text-xs text-gray-600">Invitati</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-gray-500">{fullCeremonyNoMenuPending}</div>
+                    <div className="text-xs text-gray-600">In Attesa</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-green-700">{fullCeremonyNoMenuConfirmed}</div>
+                    <div className="text-xs text-gray-600">Accettati</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-red-700">{fullCeremonyNoMenuDeclined}</div>
+                    <div className="text-xs text-gray-600">Rifiutati</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 pt-4 border-t border-gray-200 text-center">
               <div className="text-lg font-semibold text-gray-700">

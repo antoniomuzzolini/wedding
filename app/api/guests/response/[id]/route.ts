@@ -28,19 +28,16 @@ export async function PUT(
 
     const responseDate = new Date().toISOString();
     // menu_type non viene modificato dagli utenti - gestito solo dall'admin
-    // Se declined, impostiamo menu_type a null, altrimenti manteniamo quello esistente
-    const currentMenuType = (guest as any).menu_type;
-    const finalMenuType = response_status === 'declined' ? null : currentMenuType;
+    // Viene preservato anche in caso di rifiuto, così le statistiche per età restano corrette
 
     await db.prepare(
-      `UPDATE guests 
-       SET response_status = ?, 
+      `UPDATE guests
+       SET response_status = ?,
            response_date = ?,
-           menu_type = ?,
            dietary_requirements = ?,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`
-    ).run(response_status, responseDate, finalMenuType, dietary_requirements || null, id);
+    ).run(response_status, responseDate, dietary_requirements || null, id);
 
     const updatedGuest = await db.prepare('SELECT * FROM guests WHERE id = ?').get(id);
     const { id: guestId, ...guestData } = updatedGuest as any;
