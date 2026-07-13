@@ -26,9 +26,11 @@ export async function PUT(request: NextRequest) {
 
     for (const guestId of guest_ids) {
       if (action === 'add') {
+        // .all() e non .run(): il wrapper aggiunge "RETURNING id" agli INSERT
+        // eseguiti con .run(), ma guest_tags non ha una colonna id
         await db
           .prepare('INSERT INTO guest_tags (guest_id, tag_id) VALUES (?, ?) ON CONFLICT DO NOTHING')
-          .run(guestId, tag_id);
+          .all(guestId, tag_id);
       } else {
         await db.prepare('DELETE FROM guest_tags WHERE guest_id = ? AND tag_id = ?').run(guestId, tag_id);
       }
