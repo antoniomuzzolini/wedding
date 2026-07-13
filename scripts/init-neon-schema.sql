@@ -26,10 +26,37 @@ CREATE TABLE IF NOT EXISTS admin_users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Crea le tabelle per la gestione dei tavoli
+CREATE TABLE IF NOT EXISTS tables (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  capacity INTEGER NOT NULL DEFAULT 10,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tags (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) UNIQUE NOT NULL,
+  color VARCHAR(20) NOT NULL DEFAULT '#7c9070',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS guest_tags (
+  guest_id INTEGER NOT NULL REFERENCES guests(id) ON DELETE CASCADE,
+  tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  PRIMARY KEY (guest_id, tag_id)
+);
+
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS table_id INTEGER REFERENCES tables(id) ON DELETE SET NULL;
+
 -- Crea gli indici
 CREATE INDEX IF NOT EXISTS idx_guests_surname ON guests(surname);
 CREATE INDEX IF NOT EXISTS idx_guests_response ON guests(response_status);
 CREATE INDEX IF NOT EXISTS idx_guests_family ON guests(family_id);
+CREATE INDEX IF NOT EXISTS idx_guests_table ON guests(table_id);
+CREATE INDEX IF NOT EXISTS idx_guest_tags_tag ON guest_tags(tag_id);
 
 -- Nota: L'utente admin verrà creato automaticamente dall'applicazione
 -- usando la variabile d'ambiente ADMIN_PASSWORD (se configurata)

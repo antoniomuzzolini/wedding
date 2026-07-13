@@ -183,6 +183,49 @@ async function initializeSchema() {
       }
     }
 
+    // Seating management tables (additive only - never touches existing data)
+    await sql`
+      CREATE TABLE IF NOT EXISTS tables (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        capacity INTEGER NOT NULL DEFAULT 10,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS tags (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        color VARCHAR(20) NOT NULL DEFAULT '#7c9070',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS guest_tags (
+        guest_id INTEGER NOT NULL REFERENCES guests(id) ON DELETE CASCADE,
+        tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+        PRIMARY KEY (guest_id, tag_id)
+      );
+    `;
+
+    const guestColumns = await sql`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'guests' AND table_schema = 'public';
+    `;
+    const guestColumnNames = (guestColumns as any[]).map(c => c.column_name);
+
+    if (!guestColumnNames.includes('table_id')) {
+      await sql`ALTER TABLE guests ADD COLUMN table_id INTEGER REFERENCES tables(id) ON DELETE SET NULL;`;
+    }
+
+    await sql`CREATE INDEX IF NOT EXISTS idx_guests_table ON guests(table_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_guest_tags_tag ON guest_tags(tag_id);`;
+
     // Create admin_users table
     const adminTableCheck = await sql`
       SELECT EXISTS (

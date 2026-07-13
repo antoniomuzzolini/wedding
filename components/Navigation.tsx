@@ -108,6 +108,7 @@ export default function Navigation() {
     navItems = [
       ...navItems,
       { href: '/admin', label: 'Admin' },
+      { href: '/admin/tables', label: 'Tavoli' },
       { href: '/admin/notifications', label: 'Invio Notifiche' },
     ]
   }

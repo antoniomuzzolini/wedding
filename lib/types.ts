@@ -13,8 +13,27 @@ export interface Guest {
   response_date: string | null;
   menu_type: MenuType | null;
   dietary_requirements: string | null;
+  table_id: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface WeddingTable {
+  id: number;
+  name: string;
+  capacity: number;
+  sort_order: number;
+}
+
+export interface Tag {
+  id: number;
+  name: string;
+  color: string;
+}
+
+export interface GuestTag {
+  guest_id: number;
+  tag_id: number;
 }
 
 export interface GuestInput {
