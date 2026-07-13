@@ -24,6 +24,93 @@ interface LayoutSuggestion {
 
 const TAG_COLORS = ['#7c9070', '#b0805b', '#7d8bae', '#a97d9c', '#c2a24b', '#6fa3a0', '#a86b6b', '#8a8a8a']
 
+// Pannello di modifica tag per un gruppo di ospiti: di default i chip
+// agiscono su tutti i membri, con la modalità "per singolo membro" per i
+// casi in cui servono tag diversi dentro la stessa famiglia
+function TagPanel({
+  members,
+  tags,
+  tagsByGuestId,
+  saving,
+  onToggle,
+}: {
+  members: Guest[]
+  tags: Tag[]
+  tagsByGuestId: Map<number, number[]>
+  saving: boolean
+  onToggle: (memberIds: number[], tagId: number, action: 'add' | 'remove') => void
+}) {
+  const [perMember, setPerMember] = useState(false)
+  const hasTag = (guestId: number, tagId: number) => (tagsByGuestId.get(guestId) || []).includes(tagId)
+
+  if (tags.length === 0) {
+    return (
+      <div className="p-2 bg-gray-50 rounded text-xs text-gray-500">
+        Crea prima un tag dalla sezione Tag
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2 p-2 bg-gray-50 rounded">
+      {perMember && members.length > 1 ? (
+        <div className="space-y-1.5">
+          {members.map((m) => (
+            <div key={m.id} className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-xs text-gray-700">{`${m.name} ${m.surname || ''}`.trim()}</span>
+              <span className="flex flex-wrap gap-1">
+                {tags.map((tag) => {
+                  const active = hasTag(m.id, tag.id)
+                  return (
+                    <button
+                      key={tag.id}
+                      onClick={() => onToggle([m.id], tag.id, active ? 'remove' : 'add')}
+                      disabled={saving}
+                      className={`px-2 py-0.5 rounded-full text-[10px] border transition-all ${active ? 'text-white' : 'text-gray-600 bg-white'}`}
+                      style={active ? { backgroundColor: tag.color, borderColor: tag.color } : { borderColor: tag.color }}
+                    >
+                      {tag.name}
+                    </button>
+                  )
+                })}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-1">
+          {tags.map((tag) => {
+            const withTag = members.filter((m) => hasTag(m.id, tag.id)).length
+            const all = withTag === members.length && members.length > 0
+            const partial = withTag > 0 && !all
+            return (
+              <button
+                key={tag.id}
+                onClick={() => onToggle(members.map((m) => m.id), tag.id, all ? 'remove' : 'add')}
+                disabled={saving}
+                className={`px-2 py-0.5 rounded-full text-xs border transition-all ${all ? 'text-white' : 'bg-white'}`}
+                style={all ? { backgroundColor: tag.color, borderColor: tag.color } : { borderColor: tag.color, color: partial ? tag.color : '#4b5563' }}
+                title={partial ? `${withTag} membri su ${members.length} hanno questo tag; clicca per darlo a tutti` : undefined}
+              >
+                {tag.name}
+                {partial && <span className="ml-1 font-semibold">{withTag}/{members.length}</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+      {members.length > 1 && (
+        <button
+          onClick={() => setPerMember(!perMember)}
+          className="self-start text-[10px] text-gray-500 underline hover:text-gray-700"
+        >
+          {perMember ? 'torna alla famiglia intera' : 'gestisci per singolo membro'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function TablesPage() {
   const [guests, setGuests] = useState<Guest[]>([])
   const [tables, setTables] = useState<WeddingTable[]>([])
@@ -46,6 +133,7 @@ export default function TablesPage() {
   const [layout, setLayout] = useState<LayoutSuggestion | null>(null)
   const [splitFamily, setSplitFamily] = useState<number | null>(null)
   const [splitTableFamily, setSplitTableFamily] = useState<string | null>(null)
+  const [tagTableFamily, setTagTableFamily] = useState<string | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem('adminAuthenticated')
@@ -263,11 +351,7 @@ export default function TablesPage() {
     await apiCall(() => fetch(`/api/tags/${id}?adminKey=${adminKey}`, { method: 'DELETE' }))
   }
 
-  const toggleFamilyTag = async (family: FamilyGroup, tagId: number) => {
-    const allHaveTag = family.members.every((m) => (tagsByGuestId.get(m.id) || []).includes(tagId))
-    const action = allHaveTag ? 'remove' : 'add'
-    const memberIds = family.members.map((m) => m.id)
-
+  const toggleTag = async (memberIds: number[], tagId: number, action: 'add' | 'remove') => {
     // Aggiornamento ottimistico: il chip cambia subito, l'API viene chiamata
     // in background; in caso di errore si ricarica lo stato reale dal server
     setGuestTags((prev) => {
@@ -702,26 +786,14 @@ export default function TablesPage() {
                       </button>
                     </div>
                     {taggingFamily === family.key && (
-                      <div className="flex flex-wrap gap-1 mb-2 p-2 bg-gray-50 rounded">
-                        {tags.length === 0 && (
-                          <span className="text-xs text-gray-500">Crea prima un tag qui sopra</span>
-                        )}
-                        {tags.map((tag) => {
-                          const active = family.tagIds.has(tag.id)
-                          return (
-                            <button
-                              key={tag.id}
-                              onClick={() => toggleFamilyTag(family, tag.id)}
-                              disabled={saving}
-                              className={`px-2 py-0.5 rounded-full text-xs border transition-all ${
-                                active ? 'text-white' : 'text-gray-600 bg-white'
-                              }`}
-                              style={active ? { backgroundColor: tag.color, borderColor: tag.color } : { borderColor: tag.color }}
-                            >
-                              {tag.name}
-                            </button>
-                          )
-                        })}
+                      <div className="mb-2">
+                        <TagPanel
+                          members={family.members}
+                          tags={tags}
+                          tagsByGuestId={tagsByGuestId}
+                          saving={saving}
+                          onToggle={toggleTag}
+                        />
                       </div>
                     )}
                     <div className="flex items-center gap-2">
@@ -989,6 +1061,13 @@ export default function TablesPage() {
                                   </div>
                                 </div>
                                 <div className="flex gap-2 whitespace-nowrap">
+                                  <button
+                                    onClick={() => setTagTableFamily(tagTableFamily === splitKey ? null : splitKey)}
+                                    className={`text-xs ${tagTableFamily === splitKey ? 'text-wedding-sage-dark font-semibold' : 'text-gray-400 hover:text-gray-700'}`}
+                                    title="Modifica i tag di questo gruppo"
+                                  >
+                                    Tag
+                                  </button>
                                   {members.length > 1 && (
                                     <button
                                       onClick={() => setSplitTableFamily(isSplit ? null : splitKey)}
@@ -1008,6 +1087,17 @@ export default function TablesPage() {
                                   </button>
                                 </div>
                               </div>
+                              {tagTableFamily === splitKey && (
+                                <div className="mt-2">
+                                  <TagPanel
+                                    members={members}
+                                    tags={tags}
+                                    tagsByGuestId={tagsByGuestId}
+                                    saving={saving}
+                                    onToggle={toggleTag}
+                                  />
+                                </div>
+                              )}
                               {isSplit && (
                                 <div className="mt-2 p-2 bg-gray-50 rounded space-y-1.5">
                                   {members.map((m) => (
