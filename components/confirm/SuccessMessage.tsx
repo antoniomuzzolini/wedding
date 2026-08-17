@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { ResponseStatus } from '@/lib/types'
 
 interface SuccessMessageProps {
@@ -31,6 +32,25 @@ export default function SuccessMessage({ hasConfirmedMembers, familyMembersCount
         >
           {isMultiple ? "Modifica la vostra risposta" : "Modifica la tua risposta"}
         </button>
+
+        <div className="mt-10 pt-8 border-t border-gray-200">
+          <p className="text-sm text-gray-500 mb-4">Nel frattempo, scopri il resto del sito</p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {[
+              { href: '/us', label: 'Noi' },
+              { href: '/gift-list', label: 'Lista Nozze' },
+              { href: '/contacts', label: 'Contatti' },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="px-5 py-2 border border-wedding-sage-dark text-wedding-sage-dark rounded-lg hover:bg-wedding-sage-dark hover:text-white transition-all"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )
