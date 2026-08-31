@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { seatsForGuest } from '@/lib/seating';
 
 // POST /api/tables/apply-layout - Create suggested tables and seat guests (admin only)
 // Body: { tables: [{ name, capacity, guest_ids: number[] }], replace_existing?: boolean, adminKey }
@@ -19,6 +20,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Array di tavoli richiesto' }, { status: 400 });
     }
 
+    // Bambini e neonati siedono al tavolo ma non consumano un posto
+    const allGuests = await db.prepare('SELECT id, menu_type FROM guests').all();
+    const seatsByGuest = new Map<number, number>(
+      (allGuests as any[]).map((g) => [g.id, seatsForGuest(g)])
+    );
+
     for (const table of tables) {
       const capacity = parseInt(table.capacity);
       if (!table.name || typeof table.name !== 'string' || !table.name.trim()) {
@@ -27,7 +34,17 @@ export async function POST(request: NextRequest) {
       if (!capacity || capacity < 1 || capacity > 50) {
         return NextResponse.json({ error: 'La capienza deve essere tra 1 e 50' }, { status: 400 });
       }
-      if (!Array.isArray(table.guest_ids) || table.guest_ids.length > capacity) {
+      if (!Array.isArray(table.guest_ids)) {
+        return NextResponse.json(
+          { error: `Il tavolo "${table.name}" ha una lista di ospiti non valida` },
+          { status: 400 }
+        );
+      }
+      const seats = table.guest_ids.reduce(
+        (sum: number, id: number) => sum + (seatsByGuest.get(id) ?? 1),
+        0
+      );
+      if (seats > capacity) {
         return NextResponse.json(
           { error: `Il tavolo "${table.name}" ha più ospiti della capienza` },
           { status: 400 }

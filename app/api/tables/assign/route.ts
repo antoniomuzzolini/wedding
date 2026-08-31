@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { seatsForGuest } from '@/lib/seating';
 
 // PUT /api/tables/assign - Bulk assign/unassign guests to tables (admin only)
 // Body: { assignments: [{ guest_id: number, table_id: number | null }], adminKey }
@@ -20,9 +21,13 @@ export async function PUT(request: NextRequest) {
     const tables = await db.prepare('SELECT id, capacity FROM tables').all();
     const capacityById = new Map<number, number>((tables as any[]).map((t) => [t.id, t.capacity]));
 
-    const guests = await db.prepare('SELECT id, table_id FROM guests').all();
+    const guests = await db.prepare('SELECT id, table_id, menu_type FROM guests').all();
     const currentTableByGuest = new Map<number, number | null>(
       (guests as any[]).map((g) => [g.id, g.table_id])
+    );
+    // Bambini e neonati siedono al tavolo ma non consumano un posto
+    const seatsByGuest = new Map<number, number>(
+      (guests as any[]).map((g) => [g.id, seatsForGuest(g)])
     );
 
     // Stato futuro: applica le assegnazioni richieste a quelle correnti
@@ -39,9 +44,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const occupancy = new Map<number, number>();
-    futureTableByGuest.forEach((tableId) => {
+    futureTableByGuest.forEach((tableId, guestId) => {
       if (tableId != null) {
-        occupancy.set(tableId, (occupancy.get(tableId) || 0) + 1);
+        occupancy.set(tableId, (occupancy.get(tableId) || 0) + (seatsByGuest.get(guestId) ?? 1));
       }
     });
     const overCapacityEntry = Array.from(occupancy.entries()).find(

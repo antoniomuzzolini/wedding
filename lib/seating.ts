@@ -8,11 +8,27 @@
 // Obiettivi (soft):
 //  - massimizzare i tag condivisi tra le famiglie sedute allo stesso tavolo
 //  - bilanciare il riempimento dei tavoli
+//
+// Bambini e neonati siedono con la loro famiglia ma NON occupano un posto:
+// entrano nella disposizione (e nei tag) ma non consumano capienza.
+
+import { MenuType } from './types';
 
 export interface SeatingGuestInput {
   id: number;
   family_id: number | null;
   table_id: number | null;
+  menu_type?: MenuType | null;
+}
+
+/** Posti occupati da un ospite: 0 per bambini e neonati, 1 per tutti gli altri. */
+export function seatsForGuest(guest: { menu_type?: MenuType | null }): number {
+  return guest.menu_type === 'bambino' || guest.menu_type === 'neonato' ? 0 : 1;
+}
+
+/** Somma dei posti occupati da un gruppo di ospiti (bambini e neonati esclusi). */
+export function countSeats(guests: { menu_type?: MenuType | null }[]): number {
+  return guests.reduce((sum, guest) => sum + seatsForGuest(guest), 0);
 }
 
 export interface SeatingTableInput {
@@ -30,14 +46,16 @@ export interface SeatingProposal {
 interface Family {
   key: number;
   memberIds: number[];
-  size: number;
+  size: number; // persone (bambini inclusi): usata per l'affinità dei tag
+  seats: number; // posti consumati (bambini esclusi): usata per la capienza
   tags: Set<number>;
 }
 
 interface TableState {
   id: number;
   capacity: number;
-  occupied: number;
+  occupied: number; // posti consumati
+  headcount: number; // persone sedute (bambini inclusi)
   // conteggio tag presenti al tavolo (dai membri già seduti o assegnati)
   tagCounts: Map<number, number>;
   families: Family[];
@@ -59,11 +77,12 @@ function buildFamilies(
     const key = familyKey(guest);
     let family = families.get(key);
     if (!family) {
-      family = { key, memberIds: [], size: 0, tags: new Set() };
+      family = { key, memberIds: [], size: 0, seats: 0, tags: new Set() };
       families.set(key, family);
     }
     family.memberIds.push(guest.id);
     family.size += 1;
+    family.seats += seatsForGuest(guest);
     for (const tagId of tagsByGuest.get(guest.id) || []) {
       family.tags.add(tagId);
     }
@@ -72,26 +91,27 @@ function buildFamilies(
 }
 
 function affinityScore(table: TableState, family: Family): number {
-  if (table.occupied === 0) return 0;
+  if (table.headcount === 0) return 0;
   let shared = 0;
   family.tags.forEach((tagId) => {
     shared += table.tagCounts.get(tagId) || 0;
   });
-  // normalizzato sui posti occupati, così un tavolo grande non vince solo perché ha più gente
-  return shared / table.occupied;
+  // normalizzato sulle persone sedute, così un tavolo grande non vince solo perché ha più gente
+  return shared / table.headcount;
 }
 
-function balanceScore(table: TableState, familySize: number): number {
+function balanceScore(table: TableState, familySeats: number): number {
   // preferisce i tavoli meno pieni (dopo l'inserimento della famiglia)
-  return -((table.occupied + familySize) / table.capacity);
+  return -((table.occupied + familySeats) / table.capacity);
 }
 
 function scoreFor(table: TableState, family: Family): number {
-  return AFFINITY_WEIGHT * affinityScore(table, family) + BALANCE_WEIGHT * balanceScore(table, family.size);
+  return AFFINITY_WEIGHT * affinityScore(table, family) + BALANCE_WEIGHT * balanceScore(table, family.seats);
 }
 
 function placeFamily(table: TableState, family: Family) {
-  table.occupied += family.size;
+  table.occupied += family.seats;
+  table.headcount += family.size;
   table.families.push(family);
   family.tags.forEach((tagId) => {
     table.tagCounts.set(tagId, (table.tagCounts.get(tagId) || 0) + family.size);
@@ -99,7 +119,8 @@ function placeFamily(table: TableState, family: Family) {
 }
 
 function removeFamily(table: TableState, family: Family) {
-  table.occupied -= family.size;
+  table.occupied -= family.seats;
+  table.headcount -= family.size;
   table.families = table.families.filter((f) => f.key !== family.key);
   family.tags.forEach((tagId) => {
     const next = (table.tagCounts.get(tagId) || 0) - family.size;
@@ -120,7 +141,7 @@ function totalScore(tables: TableState[]): number {
       family.tags.forEach((tagId) => {
         shared += (table.tagCounts.get(tagId) || 0) - family.size;
       });
-      const others = table.occupied - family.size;
+      const others = table.headcount - family.size;
       if (others > 0) {
         score += AFFINITY_WEIGHT * (shared / others);
       }
@@ -150,6 +171,7 @@ export function computeSeatingProposal(
     id: t.id,
     capacity: t.capacity,
     occupied: 0,
+    headcount: 0,
     tagCounts: new Map(),
     families: [],
   }));
@@ -180,9 +202,9 @@ export function computeSeatingProposal(
     lockedTablesByFamilyKey.set(key, list);
   });
 
-  // Famiglie da piazzare: le più grandi prima (hanno meno tavoli candidati)
+  // Famiglie da piazzare: le più ingombranti prima (hanno meno tavoli candidati)
   const toPlace = Array.from(buildFamilies(eligibleGuests, tagsByGuest).values()).sort(
-    (a, b) => b.size - a.size || b.tags.size - a.tags.size
+    (a, b) => b.seats - a.seats || b.size - a.size || b.tags.size - a.tags.size
   );
 
   const placed: Family[] = [];
@@ -198,7 +220,7 @@ export function computeSeatingProposal(
       const target = [...lockedTables]
         .sort((a, b) => b.count - a.count)
         .map(({ tableId }) => tableById.get(tableId))
-        .find((t) => t && t.capacity - t.occupied >= family.size);
+        .find((t) => t && t.capacity - t.occupied >= family.seats);
       if (target) {
         placeFamily(target, family);
         // membri vincolati al tavolo della famiglia: esclusi dalla passata di scambi
@@ -212,7 +234,7 @@ export function computeSeatingProposal(
     let best: TableState | null = null;
     let bestScore = -Infinity;
     for (const table of tables) {
-      if (table.capacity - table.occupied < family.size) continue;
+      if (table.capacity - table.occupied < family.seats) continue;
       const score = scoreFor(table, family);
       if (score > bestScore) {
         bestScore = score;
@@ -240,7 +262,7 @@ export function computeSeatingProposal(
         // prova lo spostamento su un altro tavolo con spazio
         for (const other of tables) {
           if (other === table) continue;
-          if (other.capacity - other.occupied < family.size) continue;
+          if (other.capacity - other.occupied < family.seats) continue;
           removeFamily(table, family);
           placeFamily(other, family);
           if (totalScore(tables) > current + 1e-9) {
@@ -257,8 +279,8 @@ export function computeSeatingProposal(
           if (other === table) continue;
           for (const otherFamily of [...other.families]) {
             if (!movable.has(otherFamily.key)) continue;
-            const fitsHere = table.capacity - table.occupied + family.size >= otherFamily.size;
-            const fitsThere = other.capacity - other.occupied + otherFamily.size >= family.size;
+            const fitsHere = table.capacity - table.occupied + family.seats >= otherFamily.seats;
+            const fitsThere = other.capacity - other.occupied + otherFamily.seats >= family.seats;
             if (!fitsHere || !fitsThere) continue;
             removeFamily(table, family);
             removeFamily(other, otherFamily);
@@ -317,8 +339,9 @@ export interface LayoutSuggestion {
  * Progetta da zero il numero e la dimensione dei tavoli, oltre alla
  * disposizione: parte dal minimo numero di tavoli possibile (dato il tetto
  * di posti per tavolo) e aggiunge tavoli finché tutte le famiglie trovano
- * posto. La capienza consigliata di ogni tavolo è il numero di persone
- * sedute (mai sotto minSeats), poi modificabile a mano.
+ * posto. La capienza consigliata di ogni tavolo è il numero di posti
+ * occupati — bambini e neonati esclusi — (mai sotto minSeats), poi
+ * modificabile a mano.
  */
 export function suggestTableLayout(
   eligibleGuests: SeatingGuestInput[],
@@ -327,16 +350,16 @@ export function suggestTableLayout(
   maxSeats: number
 ): LayoutSuggestion {
   const families = Array.from(buildFamilies(eligibleGuests, tagsByGuest).values());
-  const total = families.reduce((sum, f) => sum + f.size, 0);
-  if (total === 0) {
+  if (families.length === 0) {
     return { tables: [], unplacedFamilies: [] };
   }
+  const totalSeats = families.reduce((sum, f) => sum + f.seats, 0);
 
-  // una famiglia più numerosa del tetto richiede comunque un tavolo su misura
-  const largestFamily = Math.max(...families.map((f) => f.size));
+  // una famiglia che da sola supera il tetto richiede comunque un tavolo su misura
+  const largestFamily = Math.max(...families.map((f) => f.seats));
   const seatCap = Math.max(maxSeats, largestFamily);
 
-  const baseCount = Math.max(1, Math.ceil(total / seatCap));
+  const baseCount = Math.max(1, Math.ceil(totalSeats / seatCap));
   let lastProposal: SeatingProposal | null = null;
   let lastTables: SeatingTableInput[] = [];
 
@@ -351,6 +374,7 @@ export function suggestTableLayout(
     if (proposal.unplacedFamilies.length === 0) break;
   }
 
+  const seatsByGuestId = new Map(eligibleGuests.map((g) => [g.id, seatsForGuest(g)]));
   const guestsByTable = new Map<number, number[]>();
   for (const assignment of lastProposal!.assignments) {
     const list = guestsByTable.get(assignment.table_id) || [];
@@ -364,7 +388,10 @@ export function suggestTableLayout(
     .sort((a, b) => b.length - a.length)
     .map((guestIds, index) => ({
       name: `Tavolo ${index + 1}`,
-      capacity: Math.max(minSeats, guestIds.length),
+      capacity: Math.max(
+        minSeats,
+        guestIds.reduce((sum, id) => sum + (seatsByGuestId.get(id) ?? 1), 0)
+      ),
       guestIds,
     }));
 

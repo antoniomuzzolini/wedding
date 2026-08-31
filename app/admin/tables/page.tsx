@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Guest, WeddingTable, Tag, GuestTag } from '@/lib/types'
+import { countSeats, seatsForGuest } from '@/lib/seating'
 
 interface FamilyGroup {
   key: number
@@ -272,6 +273,10 @@ export default function TablesPage() {
     }
     return acc
   }, new Map<number, Guest[]>())
+
+  // Posti liberi a un tavolo: bambini e neonati siedono ma non consumano capienza
+  const freeSeats = (tableId: number, capacity: number) =>
+    capacity - countSeats(occupantsByTable.get(tableId) || [])
 
   const totalCapacity = tables.reduce((sum, t) => sum + t.capacity, 0)
   const totalAssigned = guests.filter((g) => g.table_id != null && g.response_status !== 'declined').length
@@ -764,7 +769,12 @@ export default function TablesPage() {
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-semibold text-gray-800">{family.label}</span>
                       <span className="text-xs text-gray-500">
-                        {family.unassigned.length} {family.unassigned.length === 1 ? 'posto' : 'posti'}
+                        {countSeats(family.unassigned)} {countSeats(family.unassigned) === 1 ? 'posto' : 'posti'}
+                        {countSeats(family.unassigned) < family.unassigned.length && (
+                          <span title="Bambini e neonati: siedono al tavolo ma non occupano un posto">
+                            {' '}+{family.unassigned.length - countSeats(family.unassigned)} bimbi
+                          </span>
+                        )}
                       </span>
                     </div>
                     <div className="text-xs text-gray-500 mb-2">
@@ -811,10 +821,9 @@ export default function TablesPage() {
                             : 'Assegna a tavolo...'}
                         </option>
                         {tables.map((table) => {
-                          const occupied = (occupantsByTable.get(table.id) || []).length
-                          const free = table.capacity - occupied
+                          const free = freeSeats(table.id, table.capacity)
                           return (
-                            <option key={table.id} value={table.id} disabled={free < family.unassigned.length}>
+                            <option key={table.id} value={table.id} disabled={free < countSeats(family.unassigned)}>
                               {table.name} ({free} liberi)
                             </option>
                           )
@@ -852,10 +861,9 @@ export default function TablesPage() {
                             >
                               <option value="">Tavolo...</option>
                               {tables.map((table) => {
-                                const occupied = (occupantsByTable.get(table.id) || []).length
-                                const free = table.capacity - occupied
+                                const free = freeSeats(table.id, table.capacity)
                                 return (
-                                  <option key={table.id} value={table.id} disabled={free < 1}>
+                                  <option key={table.id} value={table.id} disabled={free < seatsForGuest(m)}>
                                     {table.name} ({free})
                                   </option>
                                 )
@@ -879,6 +887,7 @@ export default function TablesPage() {
               <p className="text-sm text-gray-600 mb-4">
                 Indica quanti posti può avere un tavolo e il sistema suggerisce quanti tavoli servono,
                 di che dimensione e chi farci sedere (in base a famiglie e tag). Vedrai un&apos;anteprima prima di salvare.
+                Bambini e neonati siedono con la loro famiglia ma non contano nel calcolo dei posti.
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <label className="text-sm text-gray-700">
@@ -961,8 +970,12 @@ export default function TablesPage() {
                   const proposedGuests = proposedIds
                     .map((id) => guests.find((g) => g.id === id))
                     .filter((g): g is Guest => !!g && g.table_id !== table.id)
-                  const fillAfterProposal = occupants.length + proposedGuests.length
-                  const fillRatio = Math.min(occupants.length / table.capacity, 1)
+                  // i bambini siedono al tavolo ma non consumano capienza
+                  const occupiedSeats = countSeats(occupants)
+                  const kidsAtTable = occupants.length - occupiedSeats
+                  const overCapacity = occupiedSeats > table.capacity
+                  const fillAfterProposal = occupiedSeats + countSeats(proposedGuests)
+                  const fillRatio = Math.min(occupiedSeats / table.capacity, 1)
 
                   // raggruppa occupanti per famiglia
                   const occupantFamilies = activeOccupants.reduce((acc, g) => {
@@ -999,10 +1012,15 @@ export default function TablesPage() {
                           <div className="flex items-center justify-between">
                             <div>
                               <span className="font-serif text-lg text-wedding-sage-dark">{table.name}</span>
-                              <span className={`ml-3 text-sm ${occupants.length > table.capacity ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
-                                {occupants.length}/{table.capacity}
+                              <span className={`ml-3 text-sm ${overCapacity ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
+                                {occupiedSeats}/{table.capacity}
                                 {proposedGuests.length > 0 && (
                                   <span className="text-blue-700"> → {fillAfterProposal}/{table.capacity}</span>
+                                )}
+                                {kidsAtTable > 0 && (
+                                  <span className="text-gray-500 font-normal" title="Bambini e neonati: siedono al tavolo ma non occupano un posto">
+                                    {' '}+{kidsAtTable} bimbi
+                                  </span>
                                 )}
                               </span>
                             </div>
@@ -1027,7 +1045,7 @@ export default function TablesPage() {
                         )}
                         <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                           <div
-                            className={`h-full ${occupants.length > table.capacity ? 'bg-red-500' : 'bg-wedding-sage-dark'}`}
+                            className={`h-full ${overCapacity ? 'bg-red-500' : 'bg-wedding-sage-dark'}`}
                             style={{ width: `${fillRatio * 100}%` }}
                           />
                         </div>
@@ -1118,9 +1136,9 @@ export default function TablesPage() {
                                         <option value="">Sposta...</option>
                                         <option value="none">Togli dal tavolo</option>
                                         {tables.filter((t) => t.id !== table.id).map((t) => {
-                                          const free = t.capacity - (occupantsByTable.get(t.id) || []).length
+                                          const free = freeSeats(t.id, t.capacity)
                                           return (
-                                            <option key={t.id} value={t.id} disabled={free < 1}>
+                                            <option key={t.id} value={t.id} disabled={free < seatsForGuest(m)}>
                                               {t.name} ({free})
                                             </option>
                                           )

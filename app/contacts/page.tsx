@@ -51,7 +51,7 @@ export default function Contacts() {
           {/* Google Maps */}
           <div className="mt-6 rounded-lg overflow-hidden shadow-lg">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2771.996443899672!2d13.258234776135293!3d45.99130027108735!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x228c53f1283e8c1d%3A0x523e5631c9615f4c!2sVilla%20Caiselli%20-%20Casa!5e0!3m2!1sit!2sit!4v1770630054999!5m2!1sit!2sit"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d346.4986353540073!2d13.261756535077168!3d45.99144724470389!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x477bb4379b898931%3A0x567fd95f376b201e!2sVia%20della%20Ferrovia%2C%209%2F7%2C%2033050%20Pavia%20di%20Udine%20UD!5e0!3m2!1sit!2sit!4v1788171565219!5m2!1sit!2sit"
               width="100%"
               height="450"
               style={{ border: 0 }}

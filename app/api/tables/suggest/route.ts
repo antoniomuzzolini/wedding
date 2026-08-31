@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const statuses = include_pending ? ['confirmed', 'pending'] : ['confirmed'];
     const eligible = await db
       .prepare(
-        `SELECT id, family_id, table_id FROM guests
+        `SELECT id, family_id, table_id, menu_type FROM guests
          WHERE invitation_type = 'full' AND response_status = ANY(?)`
       )
       .all(statuses);
