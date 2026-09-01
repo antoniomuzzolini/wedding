@@ -598,6 +598,37 @@ export default function TablesPage() {
     if (ok) setEditingLayout(null)
   }
 
+  // Il PDF arriva come allegato: lo scarichiamo via blob per poter dare un nome
+  // al file e intercettare gli errori dell'API invece di aprire una pagina bianca
+  const exportLayoutPdf = async (saved?: SavedLayout) => {
+    setSaving(true)
+    setError('')
+    try {
+      const query = saved ? `&layout_id=${saved.id}` : ''
+      const response = await fetch(`/api/tables/export?adminKey=${adminKey}${query}`)
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        setError(data.error || 'Errore nella generazione del PDF')
+        return
+      }
+      const blob = await response.blob()
+      const disposition = response.headers.get('Content-Disposition') || ''
+      const match = disposition.match(/filename="(.+)"/)
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = match ? match[1] : 'disposizione-tavoli.pdf'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      setError('Si è verificato un errore: ' + (err instanceof Error ? err.message : String(err)))
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const deleteLayout = async (saved: SavedLayout) => {
     if (!confirm(`Eliminare la configurazione "${saved.name}"? I tavoli attuali restano invariati.`)) return
     await apiCall(() => fetch(`/api/table-layouts/${saved.id}?adminKey=${adminKey}`, { method: 'DELETE' }))
@@ -872,6 +903,7 @@ export default function TablesPage() {
             Salva la disposizione attuale per poterne provare altre senza perderla. Una configurazione contiene
             solo i tavoli e chi ci siede: ospiti, conferme e tag restano sempre come sono. Prima di ogni
             sostituzione dei tavoli ne viene salvata una automaticamente, così puoi sempre tornare indietro.
+            Con &quot;Esporta PDF&quot; scarichi un foglio stampabile con i tavoli e i nomi, da mandare al ristorante.
           </p>
           <div className="flex flex-wrap gap-3 items-center mb-4">
             <input
@@ -889,6 +921,14 @@ export default function TablesPage() {
               title={tables.length === 0 ? 'Non c’è nessun tavolo da salvare' : undefined}
             >
               Salva disposizione attuale
+            </button>
+            <button
+              onClick={() => exportLayoutPdf()}
+              disabled={saving || tables.length === 0}
+              className="bg-white border border-wedding-sage-dark text-wedding-sage-dark px-6 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Scarica la disposizione attuale in PDF"
+            >
+              Esporta PDF
             </button>
             {tables.length === 0 && (
               <span className="text-xs text-gray-500">Crea prima dei tavoli</span>
@@ -943,6 +983,14 @@ export default function TablesPage() {
                           className="bg-white border border-wedding-sage-dark text-wedding-sage-dark px-4 py-1.5 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
                         >
                           Ripristina
+                        </button>
+                        <button
+                          onClick={() => exportLayoutPdf(saved)}
+                          disabled={saving}
+                          className="text-gray-600 hover:text-gray-900 text-xs disabled:opacity-50"
+                          title="Scarica questa configurazione in PDF"
+                        >
+                          PDF
                         </button>
                         <button
                           onClick={() => {
