@@ -23,6 +23,15 @@ interface LayoutSuggestion {
   unplacedFamilies: { memberIds: number[]; size: number }[]
 }
 
+interface SavedLayout {
+  id: number
+  name: string
+  note: string | null
+  created_at: string
+  tables_count: number
+  guests_count: number
+}
+
 const TAG_COLORS = ['#7c9070', '#b0805b', '#7d8bae', '#a97d9c', '#c2a24b', '#6fa3a0', '#a86b6b', '#8a8a8a']
 
 // Pannello di modifica tag per un gruppo di ospiti: di default i chip
@@ -132,6 +141,11 @@ export default function TablesPage() {
   const [includePending, setIncludePending] = useState(false)
   const [layoutSeats, setLayoutSeats] = useState({ min: 8, max: 10 })
   const [layout, setLayout] = useState<LayoutSuggestion | null>(null)
+  const [layouts, setLayouts] = useState<SavedLayout[]>([])
+  const [newLayoutName, setNewLayoutName] = useState('')
+  const [editingLayout, setEditingLayout] = useState<number | null>(null)
+  const [editLayoutName, setEditLayoutName] = useState('')
+  const [notice, setNotice] = useState('')
   const [splitFamily, setSplitFamily] = useState<number | null>(null)
   const [splitTableFamily, setSplitTableFamily] = useState<string | null>(null)
   const [tagTableFamily, setTagTableFamily] = useState<string | null>(null)
@@ -150,22 +164,25 @@ export default function TablesPage() {
     setLoading(true)
     setError('')
     try {
-      const [guestsRes, tablesRes, tagsRes] = await Promise.all([
+      const [guestsRes, tablesRes, tagsRes, layoutsRes] = await Promise.all([
         fetch(`/api/guests?adminKey=${adminKey}`),
         fetch(`/api/tables?adminKey=${adminKey}`),
         fetch(`/api/tags?adminKey=${adminKey}`),
+        fetch(`/api/table-layouts?adminKey=${adminKey}`),
       ])
-      if (!guestsRes.ok || !tablesRes.ok || !tagsRes.ok) {
+      if (!guestsRes.ok || !tablesRes.ok || !tagsRes.ok || !layoutsRes.ok) {
         setError('Errore nel caricamento dei dati')
         return
       }
       const guestsData = await guestsRes.json()
       const tablesData = await tablesRes.json()
       const tagsData = await tagsRes.json()
+      const layoutsData = await layoutsRes.json()
       setGuests(guestsData.guests || [])
       setTables(tablesData.tables || [])
       setTags(tagsData.tags || [])
       setGuestTags(tagsData.guest_tags || [])
+      setLayouts(layoutsData.layouts || [])
     } catch (err) {
       setError('Si è verificato un errore: ' + (err instanceof Error ? err.message : String(err)))
     } finally {
@@ -496,6 +513,96 @@ export default function TablesPage() {
     if (success) setLayout(null)
   }
 
+  // ---- Configurazioni salvate ----
+
+  const formatLayoutDate = (value: string) => {
+    const date = new Date(value)
+    if (isNaN(date.getTime())) return value
+    return date.toLocaleString('it-IT', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const saveCurrentLayout = async () => {
+    if (!newLayoutName.trim()) return
+    setNotice('')
+    const ok = await apiCall(() =>
+      fetch('/api/table-layouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newLayoutName, adminKey }),
+      })
+    )
+    if (ok) {
+      setNotice(`Configurazione "${newLayoutName.trim()}" salvata.`)
+      setNewLayoutName('')
+    }
+  }
+
+  const restoreLayout = async (saved: SavedLayout) => {
+    const confirmed = confirm(
+      `Ripristinare "${saved.name}"? I ${tables.length} tavoli attuali verranno sostituiti dai ${saved.tables_count} della configurazione. ` +
+        'La disposizione attuale viene salvata automaticamente, quindi puoi tornare indietro. ' +
+        'Ospiti, conferme e tag non vengono toccati.'
+    )
+    if (!confirmed) return
+
+    setSaving(true)
+    setError('')
+    setNotice('')
+    setProposal(null)
+    setLayout(null)
+    try {
+      const response = await fetch(`/api/table-layouts/${saved.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data.error || 'Errore nel ripristino della configurazione')
+        return
+      }
+      const messages = [`Configurazione "${saved.name}" ripristinata (${data.tables} tavoli).`]
+      if (data.warnings?.missingGuests > 0) {
+        messages.push(
+          `${data.warnings.missingGuests} ${data.warnings.missingGuests === 1 ? 'ospite non esiste' : 'ospiti non esistono'} più ed ${data.warnings.missingGuests === 1 ? 'è stato ignorato' : 'sono stati ignorati'}.`
+        )
+      }
+      if (data.warnings?.overCapacityTables?.length > 0) {
+        messages.push(`Ora oltre capienza: ${data.warnings.overCapacityTables.join(', ')}.`)
+      }
+      messages.push('Gli ospiti aggiunti dopo il salvataggio sono da assegnare.')
+      setNotice(messages.join(' '))
+      await loadData()
+    } catch (err) {
+      setError('Si è verificato un errore: ' + (err instanceof Error ? err.message : String(err)))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const renameLayout = async (id: number) => {
+    if (!editLayoutName.trim()) return
+    const ok = await apiCall(() =>
+      fetch(`/api/table-layouts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editLayoutName, adminKey }),
+      })
+    )
+    if (ok) setEditingLayout(null)
+  }
+
+  const deleteLayout = async (saved: SavedLayout) => {
+    if (!confirm(`Eliminare la configurazione "${saved.name}"? I tavoli attuali restano invariati.`)) return
+    await apiCall(() => fetch(`/api/table-layouts/${saved.id}?adminKey=${adminKey}`, { method: 'DELETE' }))
+  }
+
   // ---- Render ----
 
   if (!authenticated) {
@@ -598,6 +705,15 @@ export default function TablesPage() {
         </div>
 
         {error && <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg">{error}</div>}
+
+        {notice && (
+          <div className="mb-4 p-4 bg-green-50 text-green-800 rounded-lg flex items-start justify-between gap-4">
+            <span>{notice}</span>
+            <button onClick={() => setNotice('')} className="text-green-700 hover:text-green-900 font-bold">
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Proposal preview banner */}
         {proposal && (
@@ -747,6 +863,110 @@ export default function TablesPage() {
               Aggiungi Tag
             </button>
           </div>
+        </div>
+
+        {/* Saved layouts */}
+        <div className="bg-white/80 p-6 rounded-lg shadow-lg mb-8">
+          <h2 className="text-2xl font-serif text-wedding-sage-dark mb-2">Configurazioni Salvate</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Salva la disposizione attuale per poterne provare altre senza perderla. Una configurazione contiene
+            solo i tavoli e chi ci siede: ospiti, conferme e tag restano sempre come sono. Prima di ogni
+            sostituzione dei tavoli ne viene salvata una automaticamente, così puoi sempre tornare indietro.
+          </p>
+          <div className="flex flex-wrap gap-3 items-center mb-4">
+            <input
+              type="text"
+              placeholder="Nome configurazione (es. Cugini divisi)"
+              value={newLayoutName}
+              onChange={(e) => setNewLayoutName(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && saveCurrentLayout()}
+              className="flex-1 min-w-[220px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-sage-dark"
+            />
+            <button
+              onClick={saveCurrentLayout}
+              disabled={saving || !newLayoutName.trim() || tables.length === 0}
+              className="bg-wedding-sage-dark text-white px-6 py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={tables.length === 0 ? 'Non c’è nessun tavolo da salvare' : undefined}
+            >
+              Salva disposizione attuale
+            </button>
+            {tables.length === 0 && (
+              <span className="text-xs text-gray-500">Crea prima dei tavoli</span>
+            )}
+          </div>
+          {layouts.length === 0 ? (
+            <div className="text-sm text-gray-500">Nessuna configurazione salvata</div>
+          ) : (
+            <div className="space-y-2">
+              {layouts.map((saved) => (
+                <div
+                  key={saved.id}
+                  className="flex flex-wrap items-center justify-between gap-3 border border-gray-200 rounded-lg p-3"
+                >
+                  {editingLayout === saved.id ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editLayoutName}
+                        onChange={(e) => setEditLayoutName(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && renameLayout(saved.id)}
+                        className="flex-1 min-w-[200px] px-3 py-1.5 border border-gray-300 rounded text-sm"
+                      />
+                      <div className="flex gap-3 text-sm">
+                        <button
+                          onClick={() => renameLayout(saved.id)}
+                          disabled={saving || !editLayoutName.trim()}
+                          className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                        >
+                          Salva
+                        </button>
+                        <button onClick={() => setEditingLayout(null)} className="text-gray-600 hover:text-gray-800">
+                          Annulla
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="min-w-[200px]">
+                        <div className="font-semibold text-gray-800">{saved.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {formatLayoutDate(saved.created_at)} · {saved.tables_count}{' '}
+                          {saved.tables_count === 1 ? 'tavolo' : 'tavoli'} · {saved.guests_count}{' '}
+                          {saved.guests_count === 1 ? 'ospite' : 'ospiti'}
+                        </div>
+                        {saved.note && <div className="text-xs text-gray-400 italic mt-0.5">{saved.note}</div>}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => restoreLayout(saved)}
+                          disabled={saving}
+                          className="bg-white border border-wedding-sage-dark text-wedding-sage-dark px-4 py-1.5 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          Ripristina
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingLayout(saved.id)
+                            setEditLayoutName(saved.name)
+                          }}
+                          className="text-blue-600 hover:text-blue-800 text-xs"
+                        >
+                          Rinomina
+                        </button>
+                        <button
+                          onClick={() => deleteLayout(saved)}
+                          disabled={saving}
+                          className="text-red-600 hover:text-red-800 text-xs disabled:opacity-50"
+                        >
+                          Elimina
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">

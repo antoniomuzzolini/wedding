@@ -49,6 +49,15 @@ CREATE TABLE IF NOT EXISTS guest_tags (
   PRIMARY KEY (guest_id, tag_id)
 );
 
+-- Configurazioni dei tavoli salvate (snapshot: tavoli + assegnazioni)
+CREATE TABLE IF NOT EXISTS table_layouts (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  note TEXT,
+  data JSONB NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 ALTER TABLE guests ADD COLUMN IF NOT EXISTS table_id INTEGER REFERENCES tables(id) ON DELETE SET NULL;
 
 -- Crea gli indici
@@ -60,3 +69,4 @@ CREATE INDEX IF NOT EXISTS idx_guest_tags_tag ON guest_tags(tag_id);
 
 -- Nota: L'utente admin verrà creato automaticamente dall'applicazione
 -- usando la variabile d'ambiente ADMIN_PASSWORD (se configurata)
+CREATE INDEX IF NOT EXISTS idx_table_layouts_created ON table_layouts(created_at DESC);

@@ -212,6 +212,16 @@ async function initializeSchema() {
       );
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS table_layouts (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        note TEXT,
+        data JSONB NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     const guestColumns = await sql`
       SELECT column_name
       FROM information_schema.columns

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { seatsForGuest } from '@/lib/seating';
+import { autoLayoutName, saveCurrentLayoutAs } from '@/lib/table-layouts';
 
 // POST /api/tables/apply-layout - Create suggested tables and seat guests (admin only)
 // Body: { tables: [{ name, capacity, guest_ids: number[] }], replace_existing?: boolean, adminKey }
 // Se replace_existing è true, i tavoli esistenti vengono eliminati e le
 // assegnazioni azzerate prima di creare il nuovo layout. Gli ospiti e le
-// loro risposte non vengono mai toccati.
+// loro risposte non vengono mai toccati. La disposizione sostituita viene
+// salvata automaticamente tra le configurazioni, così è sempre recuperabile.
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -53,6 +55,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (replace_existing) {
+      // Rete di sicurezza: la disposizione che stiamo per cancellare resta recuperabile
+      await saveCurrentLayoutAs(autoLayoutName(), 'Salvataggio automatico prima di applicare un nuovo layout');
       await db.prepare('UPDATE guests SET table_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE table_id IS NOT NULL').run();
       await db.prepare('DELETE FROM tables').run();
     }
