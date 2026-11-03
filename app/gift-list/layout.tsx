@@ -10,8 +10,8 @@ export const metadata: Metadata = {
     type: 'website',
   },
   robots: {
-    index: false, // Lista nozze spesso non indicizzata per privacy
-    follow: true,
+    index: false,
+    follow: false,
   },
 }
 

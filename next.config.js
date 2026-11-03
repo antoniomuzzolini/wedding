@@ -1,6 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Header noindex su tutte le risposte (pagine, immagini, PDF, API):
+  // impedisce l'indicizzazione anche delle risorse che non hanno meta tag
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noimageindex' },
+        ],
+      },
+    ]
+  },
   serverExternalPackages: [
     'puppeteer-core',
     '@sparticuz/chromium',

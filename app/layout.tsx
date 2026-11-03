@@ -65,15 +65,15 @@ export const metadata: Metadata = {
     description: 'Unisciti a noi per celebrare il nostro giorno speciale il 13 Settembre 2026',
     images: ['/images/welcome.jpg'],
   },
+  // Sito privato: non indicizzare su Google e sugli altri motori di ricerca
   robots: {
-    index: true,
-    follow: true,
+    index: false,
+    follow: false,
+    nocache: true,
     googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      index: false,
+      follow: false,
+      noimageindex: true,
     },
   },
   alternates: {
